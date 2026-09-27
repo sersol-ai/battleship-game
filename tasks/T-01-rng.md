@@ -69,6 +69,11 @@ Any other file. Seeding from time/crypto (that lives in client/server code).
 
 ## Coder notes
 
-## Questions for architect
+Implemented exactly as spec: mulberry32 PRNG, `randInt`, `pick`, `shuffle`.
+All exported names/signatures match spec. TypeScript strict mode required `!` on
+array swap temps in Fisher-Yates and `pick()` return (readonly T[] index
+returns T | undefined). All 20 tests pass.
+Questions for architect
+---
 
 ## Review

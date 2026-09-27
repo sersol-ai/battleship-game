@@ -10,7 +10,7 @@ A task is **ready** when every dependency is `done`. Tasks in the same wave can 
 
 | ID   | Title                               | Role      | Depends          | Wave | Status |
 | ---- | ----------------------------------- | --------- | ---------------- | ---- | ------ |
-| T-01 | Seeded RNG                          | coder     | —                | 1    | todo   |
+| T-01 | Seeded RNG                          | coder     | —                | 1    | review   |
 | T-02 | Board geometry + fleet validation   | coder     | —                | 1    | todo   |
 | T-08 | Client shell, params, routing, menu | coder     | —                | 1    | todo   |
 | T-13 | Validate client messages (guards)   | coder     | —                | 1    | todo   |

@@ -107,6 +107,13 @@ Shots, sinking, random placement.
 
 ## Coder notes
 
+Implemented `coordKey`, `sameCoord`, `inBounds`, `shipCells`, `neighbors8/4`, `shipAt`,
+`validateShip`, `validateFleet` + fixtures FLEET_A/FLEET_B. Validation order:
+
+1. WRONG_FLEET (length/types/orientation) 2) OUT_OF_BOUNDS 3) OVERLAP 4) ADJACENT
+   (when ALLOW_ADJACENT_SHIPS false). `validateShip` ignores same-type ships. Test fixtures
+   used by later tasks (T-03, T-05, T-06, T-07, T-15). All 29 tests pass.
+
 ## Questions for architect
 
 ## Review

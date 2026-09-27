@@ -76,6 +76,12 @@ Turns, players, views.
 
 ## Coder notes
 
+Implemented `createBoard`, `hasBeenShot`, `isShipSunk`, `fireAt`, `allShipsSunk`, `remainingShips`.
+Each `fireAt` returns immutable state (new board, no mutation). Tests use FLEET_A, check miss/hit/sunk,
+ALREADY_SHOT, OUT_OF_BOUNDS, and game-ending. All 10 tests pass.
+
 ## Questions for architect
+
+---
 
 ## Review

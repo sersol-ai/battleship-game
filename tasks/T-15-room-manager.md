@@ -4,8 +4,7 @@ Role: coder · Depends on: T-01, T-05, T-06 · Size: L
 
 ## Goal
 
-All multiplayer logic as a pure, testable object. Sockets are wired later (T-16) through the
-injected `send` function.
+All multiplayer logic as a pure, testable object. Sockets are wired later (T-16) through the injected `send` function.
 
 ## Read first
 
@@ -75,17 +74,16 @@ Messages:
 
 - **create**: conn already seated → `ALREADY_IN_ROOM`. `rooms.size >= maxRooms` → `SERVER_BUSY`.
   Else new room, seat p1 `{token: newToken(), conn}`; send `joined`, `state`, `opponent`("waiting"). Log `room_created`.
-- **join**: seated → `ALREADY_IN_ROOM`; no room → `ROOM_NOT_FOUND`; no free seat (p1 then p2 checked) →
-  `ROOM_FULL`. Else take the free seat; send joiner `joined`, `state`, `opponent`(status); send the
-  other seat (if connected) `opponent`("connected").
-- **resume**: seated → `ALREADY_IN_ROOM`; no room → `ROOM_NOT_FOUND`; no seat with that token →
-  `BAD_TOKEN`. Else: if the seat already has a conn, remove that old conn from `conns` (no message);
+- **join**: seated → `ALREADY_IN_ROOM`; no room → `ROOM_NOT_FOUND`; no free seat (p1 then p2 checked) → `ROOM_FULL`.
+  Else take the free seat; send joiner `joined`, `state`, `opponent`(status); send the other seat (if connected) `opponent`("connected").
+- **resume**: seated → `ALREADY_IN_ROOM`; no room → `ROOM_NOT_FOUND`; no seat with that token → `BAD_TOKEN`.
+  Else: if the seat already has a conn, remove that old conn from `conns` (no message);
   seat.conn = conn, disconnectedAt = null; send `joined` (same token), `state`, `opponent`(status);
   notify other (if connected) `opponent`("connected").
-- **place** / **fire**: not seated → `NOT_IN_ROOM`. `applyAction` with the seat's player; error →
-  `err(conn, error)`; ok → store, `broadcastState`. On transition to finished: `lastWinner = winner`, log `match_finished`.
-- **rematch**: not seated → `NOT_IN_ROOM`; if `match.phase !== "finished"` → ignore. Add player to
-  `room.rematch`. When both seats are occupied and both voted: `match = createMatch(lastWinner ? other(lastWinner) : "p1")`
+- **place** / **fire**: not seated → `NOT_IN_ROOM`. `applyAction` with the seat's player; error → `err(conn, error)`;
+  ok → store, `broadcastState`. On transition to finished: `lastWinner = winner`, log `match_finished`.
+- **rematch**: not seated → `NOT_IN_ROOM`; if `match.phase !== "finished"` → ignore. Add player to `room.rematch`.
+  When both seats are occupied and both voted: `match = createMatch(lastWinner ? other(lastWinner) : "p1")`
   (loser starts), clear votes, `broadcastState`.
 - **leave**: not seated → `NOT_IN_ROOM`. `freeSeat(room, p)`.
 
@@ -110,13 +108,13 @@ Harness: `sent: {conn, msg}[]`, `send = (conn,msg) => sent.push({conn,msg})`, `l
 3. C joins same room → ROOM_FULL; join "ZZZZZZ" → ROOM_NOT_FOUND; A sends create again → ALREADY_IN_ROOM.
 4. place/fire before join → NOT_IN_ROOM.
 5. Both place FLEET_A/FLEET_B → both get state with phase playing; the player whose turn it is fires → both get new state;
-   the other fires → NOT_YOUR_TURN error only to them.
+  the other fires → NOT_YOUR_TURN error only to them.
 6. **No leak**: across a whole scripted game, every `state` message's `view.enemyGrid` contains no
-   `"ship"` until phase finished.
+  `"ship"` until phase finished.
 7. Disconnect B → A gets opponent disconnected. New conn B2 resume with B's token → B2 gets joined + state; A gets connected.
-   Resume with wrong token → BAD_TOKEN.
+  Resume with wrong token → BAD_TOKEN.
 8. Disconnect B, advance t by RECONNECT_GRACE_MS, sweep → A gets opponent left, match reset (phase placing, myPlaced false);
-   a new conn can now join.
+  a new conn can now join.
 9. Both disconnect, advance EMPTY_ROOM_TTL_MS + grace, sweep → roomCount 0.
 10. Finished game: rematch from one player → no new state; from both → phase placing, loser has the first turn
     after both place again.

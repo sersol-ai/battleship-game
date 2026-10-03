@@ -108,13 +108,13 @@ Harness: `sent: {conn, msg}[]`, `send = (conn,msg) => sent.push({conn,msg})`, `l
 3. C joins same room → ROOM_FULL; join "ZZZZZZ" → ROOM_NOT_FOUND; A sends create again → ALREADY_IN_ROOM.
 4. place/fire before join → NOT_IN_ROOM.
 5. Both place FLEET_A/FLEET_B → both get state with phase playing; the player whose turn it is fires → both get new state;
-  the other fires → NOT_YOUR_TURN error only to them.
+   the other fires → NOT_YOUR_TURN error only to them.
 6. **No leak**: across a whole scripted game, every `state` message's `view.enemyGrid` contains no
-  `"ship"` until phase finished.
+   `"ship"` until phase finished.
 7. Disconnect B → A gets opponent disconnected. New conn B2 resume with B's token → B2 gets joined + state; A gets connected.
-  Resume with wrong token → BAD_TOKEN.
+   Resume with wrong token → BAD_TOKEN.
 8. Disconnect B, advance t by RECONNECT_GRACE_MS, sweep → A gets opponent left, match reset (phase placing, myPlaced false);
-  a new conn can now join.
+   a new conn can now join.
 9. Both disconnect, advance EMPTY_ROOM_TTL_MS + grace, sweep → roomCount 0.
 10. Finished game: rematch from one player → no new state; from both → phase placing, loser has the first turn
     after both place again.
@@ -129,6 +129,17 @@ Harness: `sent: {conn, msg}[]`, `send = (conn,msg) => sent.push({conn,msg})`, `l
 Sockets, JSON, HTTP.
 
 ## Coder notes
+
+Fixed: none — the task had no review feedback; implemented from scratch (see notes below).
+
+1. No review feedback existed anywhere (task file `## Review` empty in every ref, no review file in the repo), and `src/server/rooms.ts` on disk was a truncated garbled reconstruction with no `rooms.test.ts`. So this is a from-scratch implementation, not a feedback fix.
+2. `MAX_ROOMS` is **not** exported from `src/shared/protocol.ts` (only `MAX_MESSAGE_BYTES`, `ROOM_CODE_LENGTH`, `ROOM_CODE_ALPHABET`), so the task's `import ... from "../shared/protocol.ts"` line is impossible. I kept the `maxRooms?: number` dep and defaulted to a local `DEFAULT_MAX_ROOMS = 500`.
+3. `handleMessage(conn, msg: ClientMessage)` cannot validate wire shape (guards are T-13, not a dep of T-15), so `join`/`resume` re-check `room.length === ROOM_CODE_LENGTH` and `fire` re-checks `0 <= x,y < BOARD_SIZE` before calling `applyAction`.
+4. `applyAction` is pure, so I call it once and pass the same `state` to `validateAction` and `room.match = next` — no double application.
+5. Seat identity is the reconnect token; `conn` is nullable. `handleDisconnect` keeps the seat (grace), sends `opponent(disconnected)` + `error(RECONNECT_LATER)` to the other seat; `sweep()` frees seats past `RECONNECT_GRACE_MS`, sends `opponent(left)`, resets both players' `myPlaced`, and deletes rooms whose seats are both empty (log `room_closed`).
+6. Rematch: both votes required; new match via `createMatch(rng.next() < 0.5 ? ...)` with `firstTurn = other(lastWinner)`.
+7. `src/server/app.ts` (T-16 WIP, not mine) does `import rooms from "./rooms.ts"` expecting a **default export** — contract mismatch for T-16 to resolve.
+8. `npm run check` is still red, but only for other tasks' files: `src/server/app.ts` (6) and `src/server/static.test.ts` (7). `rooms.ts` + `rooms.test.ts` are clean; 13 tests pass.
 
 ## Questions for architect
 

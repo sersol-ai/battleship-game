@@ -25,7 +25,7 @@ A task is **ready** when every dependency is `done`. Tasks in the same wave can 
 | T-13 | Validate client messages (guards)   | coder     | —                | 1    | review      |
 | T-14 | Static file handler                 | coder     | —                | 1    | review      |
 | T-15 | RoomManager                         | coder     | T-01, T-05, T-06 | 5    | review      |
-| T-16 | Server: HTTP + WebSocket            | coder     | T-13, T-14, T-15 | 6    | in-progress |
+| T-16 | Server: HTTP + WebSocket            | coder     | T-13, T-14, T-15 | 6    | review      |
 | T-17 | WebSocket client + OnlineController | coder     | T-09             | 7    | todo        |
 | T-18 | Lobby + online wiring               | coder     | T-12, T-16, T-17 | 9    | todo        |
 | Q-01 | Playwright setup + vs-AI e2e        | qa        | T-12             | 9    | todo        |

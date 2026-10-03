@@ -86,6 +86,15 @@ Client networking.
 
 ## Coder notes
 
+- app.ts/index.ts follow the spec: healthz, static fallback, `/ws` upgrade only, ping + sweep intervals, `close()` clears intervals, terminates sockets, closes the http server.
+- `startServer` had to be `async` — a plain function returning an object literal is rejected (TS2353) against `Promise<RunningServer>`.
+- @types/ws declares `on(...)` listeners with an implicit `this` first param, so `(data, isBinary)` / `(error)` bind correctly; verified against ws's own `emit` calls.
+- `ClientMessage` carries no fleet on create/join — placement is a separate `place` message, so tests go create → place → join → place.
+- Tests use `describe("server", () => { it(...) })`; a bare `async` describe registers an empty suite in this vitest version.
+- Room-code regex rebuilt from `ROOM_CODE_ALPHABET` (A–Z minus I/O, plus 2–9).
+- Branch merges `task/T-14` + `task/T-15` so the dependency code compiles; T-13 was already on main.
+- `npm run check` green: 15 files / 157 tests.
+
 ## Questions for architect
 
 ## Review

@@ -77,7 +77,12 @@ Behaviour:
 
 DOM, screens.
 
-## Coder notes
+- Created `src/client/error-text.ts` mapping every `ProtocolError` code to a readable English string.
+- Created `src/client/local-controller.ts` implementing `GameController` for human-vs-AI gameplay: manages MatchState, handles placing/firing/rematch/dispose, schedules AI turns with setTimeout, notifies subscribers via snapshot pattern.
+- Created `src/client/local-controller.test.ts` with 8 tests: initial snapshot, placing transitions, AI scheduling, turn-violation errors, fleet validation, full game-to-finished loop, dispose cleanup, deterministic seed replay.
+- **State mutation bug**: `applyAction` returns `Result<MatchState>` but does NOT mutate in place. Forgetting `state = result.value` after fire/place silently keeps old state. Discovered when fire seemed to do nothing.
+- **Test loop stale snapshot**: Original full-game test hung with SIGABRT (OOM). Root cause: `snapshots.at(-1)` could be stale if subscribe wasn't called before initial fire. Fixed by ensuring subscribe is always called first.
+- All 119 tests pass, typecheck clean, formatting green.
 
 ## Questions for architect
 

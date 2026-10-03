@@ -98,7 +98,7 @@ Markup: `<section data-testid="screen-menu">` with title "Battleship", `select-d
 
 Other screens, controllers.
 
-## Coder notes
+Implemented params.ts (readParams with seed/aidelay/room parsing & validation), routing.ts (4-rule router), screens/menu.ts (mountMenu with unmount), main.ts (glue), index.html (HTML shell), styles.css (CSS vars + button/menu styles), css-declarations.d.ts (side-effect asset type). Created params.test.ts (13 tests) and routing.test.ts (7 tests).
 
 ## Questions for architect
 

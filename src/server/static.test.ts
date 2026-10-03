@@ -1,219 +1,154 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { createServer } from "node:http";
-import { mkdtemp, writeFile, rmSync, statSync } from "node:fs";
+import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import { join } from "node:path";
-import type { Address } from "node:net";
-
+import { tmpdir } from "node:os";
 import { createStaticHandler } from "./static.ts";
 
+const INDEX_HTML = "<!doctype html><title>battleship</title>";
+const APP_JS = "console.log('client');";
+const ROBOTS_TXT = "User-agent: *\nDisallow:\n";
+
+interface Served {
+  status: number;
+  body: string;
+  type: string | null;
+  cache: string | null;
+  allow: string | null;
+  nosniff: string | null;
+}
+
+/** Build the temp root (index.html, assets/app.js, robots.txt), run `run`, then drop the dir. */
+async function withRoot(run: (rootDir: string) => Promise<void>): Promise<void> {
+  const rootDir = await mkdtemp(join(tmpdir(), "static-"));
+  try {
+    await writeFile(join(rootDir, "index.html"), INDEX_HTML);
+    await mkdir(join(rootDir, "assets"));
+    await writeFile(join(rootDir, "assets", "app.js"), APP_JS);
+    await writeFile(join(rootDir, "robots.txt"), ROBOTS_TXT);
+    await run(rootDir);
+  } finally {
+    await rm(rootDir, { recursive: true });
+  }
+}
+
+/** One request per server on a random port; the body is read before the socket closes. */
+async function fetchFrom(rootDir: string, path: string, method: string): Promise<Served> {
+  const server = createServer(createStaticHandler(rootDir));
+  server.listen(0);
+  const address = server.address();
+  if (address === null || typeof address === "string") {
+    await server.close();
+    throw new Error("server did not bind a port");
+  }
+  try {
+    const res = await fetch(`http://localhost:${address.port}${path}`, { method });
+    return {
+      status: res.status,
+      body: await res.text(),
+      type: res.headers.get("content-type"),
+      cache: res.headers.get("cache-control"),
+      allow: res.headers.get("allow"),
+      nosniff: res.headers.get("x-content-type-options"),
+    };
+  } finally {
+    await server.close();
+  }
+}
+
 describe("static file handler", () => {
-  afterEach(() => {
-    process.hrtime.bigint();
+  it("/ → 200 html, no-cache", async () => {
+    await withRoot(async (rootDir) => {
+      const res = await fetchFrom(rootDir, "/", "GET");
+      expect(res.status).toBe(200);
+      expect(res.type).toBe("text/html; charset=utf-8");
+      expect(res.cache).toBe("no-cache");
+      expect(res.nosniff).toBe("nosniff");
+      expect(res.body).toBe(INDEX_HTML);
+    });
   });
 
-  it("/ → 200 html, no-cache", async function () {
-    const tmpDir = await mkdtemp(join("/tmp", "static-"));
-
-    await writeFile(join(tmpDir, "index.html"), "<html>OK</html>");
-
-    const server = createServer((req, res) => {
-      try {
-        const handler = createStaticHandler(tmpDir);
-        handler(req, res);
-      } catch (e) {
-        console.error("server error:", e);
-        res.writeHead(500, { "Content-Type": "text/plain" });
-        res.end("Internal error");
-      }
+  it("/assets/app.js → 200 js, immutable cache", async () => {
+    await withRoot(async (rootDir) => {
+      const res = await fetchFrom(rootDir, "/assets/app.js", "GET");
+      expect(res.status).toBe(200);
+      expect(res.type).toBe("text/javascript; charset=utf-8");
+      expect(res.cache).toBe("public, max-age=31536000, immutable");
+      expect(res.body).toBe(APP_JS);
     });
-
-    await new Promise((resolve) => server.listen(0, () => resolve(0)));
-
-    const port = (server.address() as Address).port;
-    const res = await fetch(`http://localhost:${port}/`);
-    server.close();
-
-    expect(res.status).toBe(200);
-    expect(res.headers.get("content-type")).toBe("text/html; charset=utf-8");
-    expect(res.headers.get("cache-control")).toBe("no-cache");
-    expect(await res.text()).toBe("<html>OK</html>");
   });
 
-  it("/assets/app.js → 200 js, immutable cache", async function () {
-    const tmpDir = await mkdtemp(join("/tmp", "static-"));
-
-    await writeFile(join(tmpDir, "index.html"), "<html></html>");
-    await writeFile(join(tmpDir, "assets/app.js"), "console.log('js');");
-
-    const server = createServer((req, res) => {
-      try {
-        const handler = createStaticHandler(tmpDir);
-        handler(req, res);
-      } catch (e) {
-        console.error("server error:", e);
-        res.writeHead(500, { "Content-Type": "text/plain" });
-        res.end("Internal error");
-      }
+  it("/some/route → 200 index.html content", async () => {
+    await withRoot(async (rootDir) => {
+      const res = await fetchFrom(rootDir, "/some/route", "GET");
+      expect(res.status).toBe(200);
+      expect(res.type).toBe("text/html; charset=utf-8");
+      expect(res.cache).toBe("no-cache");
+      expect(res.body).toBe(INDEX_HTML);
     });
-
-    await new Promise((resolve) => server.listen(0, () => resolve(0)));
-
-    const port = (server.address() as Address).port;
-    const res = await fetch(`http://localhost:${port}/assets/app.js`);
-    server.close();
-
-    expect(res.status).toBe(200);
-    expect(res.headers.get("content-type")).toBe("text/javascript; charset=utf-8");
-    expect(res.headers.get("cache-control")).toBe(
-      "public, max-age=31536000, immutable",
-    );
-    expect(await res.text()).toBe("console.log('js');");
   });
 
-  it("/some/route → 200 index.html content", async function () {
-    const tmpDir = await mkdtemp(join("/tmp", "static-"));
-
-    await writeFile(join(tmpDir, "index.html"), "<html>SUCCESS</html>");
-
-    const server = createServer((req, res) => {
-      try {
-        const handler = createStaticHandler(tmpDir);
-        handler(req, res);
-      } catch (e) {
-        console.error("server error:", e);
-        res.writeHead(500, { "Content-Type": "text/plain" });
-        res.end("Internal error");
-      }
+  it("/missing.png → 404", async () => {
+    await withRoot(async (rootDir) => {
+      const res = await fetchFrom(rootDir, "/missing.png", "GET");
+      expect(res.status).toBe(404);
+      expect(res.body).toBe("Not found");
+      expect(res.nosniff).toBe("nosniff");
     });
-
-    await new Promise((resolve) => server.listen(0, () => resolve(0)));
-
-    const port = (server.address() as Address).port;
-    const res = await fetch(`http://localhost:${port}/some/route`);
-    server.close();
-
-    expect(res.status).toBe(200);
-    expect(await res.text()).toBe("<html>SUCCESS</html>");
   });
 
-  it("/../package.json and /%2e%2e/%2e%2e/etc/passwd → 404", async function () {
-    const tmpDir = await mkdtemp(join("/tmp", "static-"));
-
-    await writeFile(join(tmpDir, "index.html"), "<html></html>");
-    await writeFile(join(tmpDir, "package.json"), '{"name":"bad"}');
-
-    const server = createServer((req, res) => {
-      try {
-        const handler = createStaticHandler(tmpDir);
-        handler(req, res);
-      } catch (e) {
-        console.error("server error:", e);
-        res.writeHead(500, { "Content-Type": "text/plain" });
-        res.end("Internal error");
+  it("traversal → 404, and nothing outside the root is ever served", async () => {
+    await withRoot(async (rootDir) => {
+      const traversals = [
+        "/../package.json",
+        "/../../package.json",
+        "/..%2Fpackage.json",
+        "/..%2f..%2fetc%2Fpasswd",
+      ];
+      for (const path of traversals) {
+        const res = await fetchFrom(rootDir, path, "GET");
+        expect(res.status).toBe(404);
+        expect(res.body).toBe("Not found");
       }
+      // `fetch` resolves `%2e%2e` before the request is sent, so the server only ever
+      // sees `/etc/passwd` — a SPA route. What must hold is that passwd content leaks
+      // nowhere: the body is the served index.html.
+      const encoded = await fetchFrom(rootDir, "/%2e%2e/%2e%2e/etc/passwd", "GET");
+      expect(encoded.body).toBe(INDEX_HTML);
     });
-
-    await new Promise((resolve) => server.listen(0, () => resolve(0)));
-
-    const port = (server.address() as Address).port;
-
-    const res1 = await fetch(`http://localhost:${port}/../package.json`);
-    expect(res1.status).toBe(404);
-
-    const res2 = await fetch(
-      `http://localhost:${port}/%2e%2e/%2e%2e/etc/passwd`,
-    );
-    expect(res2.status).toBe(404);
-
-    server.close();
   });
 
-  it("POST / → 405", async function () {
-    const tmpDir = await mkdtemp(join("/tmp", "static-"));
-
-    await writeFile(join(tmpDir, "index.html"), "<html></html>");
-
-    const server = createServer((req, res) => {
-      try {
-        const handler = createStaticHandler(tmpDir);
-        handler(req, res);
-      } catch (e) {
-        console.error("server error:", e);
-        res.writeHead(500, { "Content-Type": "text/plain" });
-        res.end("Internal error");
-      }
+  it("POST / → 405; HEAD /robots.txt → 200, empty body", async () => {
+    await withRoot(async (rootDir) => {
+      const post = await fetchFrom(rootDir, "/", "POST");
+      expect(post.status).toBe(405);
+      expect(post.allow).toBe("GET, HEAD");
+      expect(post.body).toBe("Method Not Allowed");
+      const head = await fetchFrom(rootDir, "/robots.txt", "HEAD");
+      expect(head.status).toBe(200);
+      expect(head.body).toBe("");
+      expect(head.type).toBe("text/plain; charset=utf-8");
     });
-
-    await new Promise((resolve) => server.listen(0, () => resolve(0)));
-
-    const port = (server.address() as Address).port;
-    const res = await fetch(`http://localhost:${port}/`, {
-      method: "POST",
-      body: "",
-    });
-    server.close();
-
-    expect(res.status).toBe(405);
-    expect(res.headers.get("allow")).toBe("GET, HEAD");
   });
 
-  it("HEAD /robots.txt → 200, empty body", async function () {
-    const tmpDir = await mkdtemp(join("/tmp", "static-"));
-
-    await writeFile(join(tmpDir, "index.html"), "<html></html>");
-    await writeFile(join(tmpDir, "robots.txt"), "User-agent: *\nAllow: /");
-
-    const server = createServer((req, res) => {
-      try {
-        const handler = createStaticHandler(tmpDir);
-        handler(req, res);
-      } catch (e) {
-        console.error("server error:", e);
-        res.writeHead(500, { "Content-Type": "text/plain" });
-        res.end("Internal error");
-      }
+  it("/%E0%A4%A (bad encoding) → 400", async () => {
+    await withRoot(async (rootDir) => {
+      const res = await fetchFrom(rootDir, "/%E0%A4%A", "GET");
+      expect(res.status).toBe(400);
+      expect(res.body).toBe("Bad Request");
+      expect(res.nosniff).toBe("nosniff");
     });
-
-    await new Promise((resolve) => server.listen(0, () => resolve(0)));
-
-    const port = (server.address() as Address).port;
-    const res = await fetch(
-      `http://localhost:${port}/robots.txt`,
-      { method: "HEAD" },
-    );
-    const body = await res.text();
-    server.close();
-
-    expect(res.status).toBe(200);
-    expect(res.headers.get("content-type")).toBe("text/plain; charset=utf-8");
-    expect(body).toBe("");
   });
 
-  it("/%E0%A4%A (bad encoding) → 400", async function () {
-    const tmpDir = await mkdtemp(join("/tmp", "static-"));
-
-    await writeFile(join(tmpDir, "index.html"), "<html></html>");
-
-    const server = createServer((req, res) => {
-      try {
-        const handler = createStaticHandler(tmpDir);
-        handler(req, res);
-      } catch (e) {
-        console.error("server error:", e);
-        res.writeHead(500, { "Content-Type": "text/plain" });
-        res.end("Internal error");
-      }
+  it("query string is ignored, HEAD on a SPA route sends headers only", async () => {
+    await withRoot(async (rootDir) => {
+      const withQuery = await fetchFrom(rootDir, "/?next=1", "GET");
+      expect(withQuery.status).toBe(200);
+      expect(withQuery.body).toBe(INDEX_HTML);
+      const headRoute = await fetchFrom(rootDir, "/some/route", "HEAD");
+      expect(headRoute.status).toBe(200);
+      expect(headRoute.body).toBe("");
+      expect(headRoute.type).toBe("text/html; charset=utf-8");
     });
-
-    await new Promise((resolve) => server.listen(0, () => resolve(0)));
-
-    const port = (server.address() as Address).port;
-    const res = await fetch(
-      `http://localhost:${port}//%E0%A4%A`,
-      { method: "HEAD" },
-    );
-    server.close();
-
-    expect(res.status).toBe(400);
   });
 });

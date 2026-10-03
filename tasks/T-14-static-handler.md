@@ -65,6 +65,14 @@ Create a temp dir (`fs.mkdtemp(path.join(os.tmpdir(), "static-"))`) with `index.
 
 ## Coder notes
 
+1. Both files already existed as a broken reconstruction (recovery commit `51dbab5`): 35 typecheck errors in the test file, 7/7 tests dying on `server.close()` without a callback, and `/` + SPA routes answering 404. Rewrote both from the spec.
+2. `new URL` normalizes `..` (and undici `fetch` percent-decodes `%2e%2e` **client-side**), so the traversal check runs on the decoded request path, not the normalized one: explicit `.`/`..` segments → 404 instead of falling through to the SPA route.
+3. Consequence: the spec's literal `/../package.json` and `/%2e%2e/%2e%2e/etc/passwd` cannot both be 404 through `fetch` — the client rewrites the second to `/etc/passwd` before sending, which is a legitimate SPA route (200 index.html). The test asserts 404 for the forms that reach the wire intact (`/..%2Fpackage.json`, `/..%2f..%2fetc%2Fpasswd`) and that passwd content never leaks for the encoded one.
+4. `url.host !== "x"` also rejects absolute / protocol-relative `req.url` values.
+5. `lstat` + `isFile()` (not `stat`) so a symlink inside the root can never read outside it; `node:fs/promises` per spec (the old file used sync `node:fs`).
+6. `X-Content-Type-Options: nosniff` now on 405/400/404 too, per spec step 7 ("every response"), not just 200s.
+7. `npm run check` is still red, but only for other tasks' files: `src/server/app.ts` (6, T-16 WIP) and `src/server/rooms.ts` (29 — this branch is based on `main`; T-15's fix lives on `task/T-15`). `static.ts` + `static.test.ts`: 0 errors, 8 tests pass.
+
 ## Questions for architect
 
 ## Review

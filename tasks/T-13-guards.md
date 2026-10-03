@@ -68,6 +68,22 @@ Server wiring. Game-rule validation (fleet shape/bounds are checked by the engin
 
 ## Coder notes
 
+- Final summary: `npm test -- src/shared/guards.test.ts` → Test Files 1 passed (1) · Tests 11 passed
+  (11); `prettier --check .` → "All matched files use Prettier code style!"; `tsc --noEmit` reports
+  0 errors in my files.
+- Signatures match the spec character for character: `isRoomCode`, `isCoord`, `isClientMessage`,
+  `parseClientMessage` (plus internal `buildClientMessage` / `toCoord` / `toFleet` / `plainObject`).
+- One validator does both jobs: `buildClientMessage` decides _and_ rebuilds the message (nested
+  coord / fleet items rebuilt too), so `isClientMessage` and `parseClientMessage` cannot disagree.
+- `plainObject` has one cast `x as Record<string, unknown>` — TS forbids property access on
+  `object`; no `as any`, no `!`, no `@ts-ignore`.
+- Size check reads `raw.length` (UTF-16 units, not bytes): `src/shared` may not use Node APIs.
+  The ws server still enforces real bytes via `maxPayload`, so this is the weaker-but-safe check.
+- "integer" = `Number.isInteger`, so `isCoord` rejects `1.5`, `"1"`, `NaN`, `Infinity`; bounds
+  left to the engine. `place` fleet length is 1..10, duplicate ship types allowed (engine checks).
+- `npm run check` is red only from pre-existing `src/server/{app,rooms,static.test}.ts` errors
+  (T-14/T-15/T-16 WIP already dirty on main, outside my Files list); untouched by this task.
+
 ## Questions for architect
 
 ## Review

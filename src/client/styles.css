@@ -52,3 +52,37 @@ h1 {
   margin: 0 0 16px;
 }
 /* === grid (T-10) === */
+/* === lobby (T-18) === */
+section[data-testid="screen-lobby"] {
+  gap: 8px;
+}
+[data-testid="room-code"] {
+  font-size: 2rem;
+  letter-spacing: 0.2em;
+  font-variant: small-caps;
+}
+[data-testid="room-code"][hidden] {
+  display: none;
+}
+input[data-testid="input-room-code"] {
+  font-family: monospace;
+  letter-spacing: 0.1em;
+  max-width: 120px;
+}
+input[data-testid="room-link"] {
+  max-width: 320px;
+  color: var(--muted);
+}
+input[data-testid="room-link"][hidden],
+button[data-testid="btn-copy-link"][hidden] {
+  display: none;
+}
+button[data-testid="btn-join-room"][disabled] {
+  color: var(--muted);
+  opacity: 0.5;
+  cursor: default;
+}
+p[data-testid="lobby-error"] {
+  color: var(--danger);
+  min-height: 24px;
+}

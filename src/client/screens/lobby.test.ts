@@ -29,7 +29,7 @@ function sleep(ms: number): Promise<void> {
 function newPage(): { root: HTMLElement; close: () => void } {
   const page = new Window({ url: "http://localhost:8080/" });
   Object.assign(globalThis, { document: page.document, location: page.window.location });
-  return { root: page.document.createElement("div"), close: () => page.close() };
+  return { root: document.createElement("div"), close: () => page.close() };
 }
 
 function fakeController(snapshot: ControllerSnapshot): GameController {
@@ -67,7 +67,7 @@ describe("lobby screen", () => {
     await sleep(150);
     expect(input.value).toBe("K7PQ2M");
     expect(joinBtn.disabled).toBe(false);
-    joinBtn.dispatchEvent(new Event("click"));
+    joinBtn.click();
     expect(joined).toEqual(["K7PQ2M"]);
     unmount();
     page.close();
@@ -87,7 +87,7 @@ describe("lobby screen", () => {
       onBack: () => {},
     });
     const createBtn = page.root.querySelector("[data-testid=btn-create-room]") as HTMLButtonElement;
-    createBtn.dispatchEvent(new Event("click"));
+    createBtn.click();
     expect(created).toEqual(["create"]);
     unmount();
     page.close();

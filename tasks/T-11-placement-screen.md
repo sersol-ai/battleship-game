@@ -105,4 +105,15 @@ Battle screen, online.
 
 ## Questions for architect
 
+## Coder notes (T-11 implementation)
+
+- Branch `task/T-11` off `task/T-10` (not `main`): T-11's Read-first needs `src/client/ui/grid.ts`, which only exists there; that branch also carries the fixed T-14/T-15/T-16/T-17/T-18 code, so `npm run check` is green (20 files / 186 tests, 9 new).
+- T-10's grid component exports `mountGrid(root, deps): () => void` with `deps.preview()` as a **getter**, not the `grid.setPreview()/clearPreview()` object the spec text implies. Same behaviour: the screen keeps `preview: GridPreview | null` in its closure and hands it to the grid; hover listeners set it, `mouseout` sets it to null.
+- `PlacementDeps` uses method fields (`onExit(): void`) per the repo's `mountX` convention; the spec's `onExit(): void` line is read as a method, so the object literal passes `onExit: exitToMenu`.
+- Grid re-renders on T-10's 100 ms interval, so tests `await tick()` (120 ms) after a click before asserting `data-state`.
+- `readyButton` disabled state is asserted with `hasAttribute("disabled")` because `toggleAttribute` writes an empty value; happy-dom's `querySelector` returns `Element`, so test helpers cast to `HTMLButtonElement`/`HTMLElement` (same as T-18's lobby test) to call `.click()`.
+- `controller.place` call is verified through a `placeFleets` array the fake rig records; vitest's `vi.fn()` object exposes neither `.calls` nor `.callCount` at runtime in this version, so the mock's own bookkeeping is not asserted.
+- `main.ts` was rewritten to the spec's shape (`mountScreen` / `startGame` / `exitToMenu` + `routeFor` subscription) and keeps T-18's online lobby path: `onPlayOnline`/`?room=` now go through `startGame(createOnlineController(...))`, and the subscription re-mounts the lobby via `routeFor`. `startGame` disposes the previous controller and unsubscribes first, which the spec snippet omits but is needed for the lobby's retry.
+- Battle and lobby placeholders: battle renders `<section data-testid="screen-battle">Battle (T-12)</section>` per spec; lobby is the real T-18 screen, not a placeholder.
+
 ## Review

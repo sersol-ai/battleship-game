@@ -20,7 +20,7 @@ A task is **ready** when every dependency is `done`. Tasks in the same wave can 
 | T-08 | Client shell, params, routing, menu | coder     | —                | 1    | done   |
 | T-09 | LocalController (vs AI)             | coder     | T-04, T-06, T-07 | 6    | done   |
 | T-10 | Grid component                      | coder     | T-06, T-08       | 5    | review |
-| T-11 | Placement screen + vs-AI wiring     | coder     | T-08, T-09, T-10 | 7    | review |
+| T-11 | Placement screen + vs-AI wiring     | coder     | T-08, T-09, T-10 | 7    | review      |
 | T-12 | Battle screen                       | coder     | T-11             | 8    | todo   |
 | T-13 | Validate client messages (guards)   | coder     | —                | 1    | review |
 | T-14 | Static file handler                 | coder     | —                | 1    | review |

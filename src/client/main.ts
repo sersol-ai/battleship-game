@@ -1,100 +1,117 @@
 import "./styles.css";
 import { readParams } from "./params.ts";
 import { routeFor } from "./routing.ts";
+import type { Route } from "./routing.ts";
 import type { AiDifficulty } from "../shared/types.ts";
 import type { GameController } from "./controller.ts";
+import { createLocalController } from "./local-controller.ts";
 import { createOnlineController } from "./online-controller.ts";
 import type { OnlineIntent } from "./online-controller.ts";
 import { mountMenu } from "./screens/menu.ts";
 import type { MenuDeps } from "./screens/menu.ts";
 import { mountLobby } from "./screens/lobby.ts";
+import type { LobbyDeps } from "./screens/lobby.ts";
+import { mountPlacement } from "./screens/placement.ts";
+import type { PlacementDeps } from "./screens/placement.ts";
+import { createRng } from "../shared/rng.ts";
 
 const appEl = document.getElementById("app")!;
+const params = readParams(location.search, Math.floor(Math.random() * 2 ** 32));
 
 let controller: GameController | null = null;
+let unsubscribe: () => void = () => {};
 let unmountScreen: () => void = () => {};
+let route: Route | "menu" = "menu";
 
-// Dispose the active controller without navigating (used by the lobby's retry).
-function stopGame(): void {
-  if (controller !== null) {
-    controller.dispose();
-    controller = null;
-  }
+function mountBattlePlaceholder(root: HTMLElement): () => void {
+  const section = document.createElement("section");
+  section.setAttribute("data-testid", "screen-battle");
+  section.textContent = "Battle (T-12)";
+  root.innerHTML = "";
+  root.appendChild(section);
+  return () => {
+    root.innerHTML = "";
+  };
 }
 
-function startGame(intent: OnlineIntent): void {
-  stopGame();
-  controller = createOnlineController({ intent });
+function lobbyDeps(active: GameController | null): LobbyDeps {
+  return {
+    controller: active,
+    onCreate(): void {
+      startGame(createOnlineController({ intent: { kind: "create" } }));
+    },
+    onJoin(room: string): void {
+      startGame(createOnlineController({ intent: { kind: "join", room } }));
+    },
+    onBack(): void {
+      exitToMenu();
+    },
+  };
 }
 
-function mountOnline(): void {
-  if (controller === null) {
-    unmountScreen();
-    unmountScreen = mountLobby(appEl, {
-      controller: null,
-      onCreate(): void {
-        startGame({ kind: "create" });
-        mountOnline();
-      },
-      onJoin(room: string): void {
-        startGame({ kind: "join", room });
-        mountOnline();
-      },
-      onBack(): void {
-        exitToMenu();
-      },
-    });
+function mountScreen(next: Route | "menu"): void {
+  unmountScreen();
+  route = next;
+  if (next === "menu") {
+    unmountScreen = mountMenu(appEl, menuDeps);
     return;
   }
-
-  const route = routeFor(controller.getSnapshot());
-  if (route === "lobby") {
-    // Re-mount so the lobby receives the controller (room code, link, status).
-    unmountScreen();
-    unmountScreen = mountLobby(appEl, {
+  if (next === "placement" && controller !== null) {
+    const deps: PlacementDeps = {
       controller,
-      onCreate(): void {
-        startGame({ kind: "create" });
-        mountOnline();
-      },
-      onJoin(room: string): void {
-        startGame({ kind: "join", room });
-        mountOnline();
-      },
-      onBack(): void {
-        exitToMenu();
-      },
-    });
+      rng: createRng(params.seed ^ 0x5bd1e995),
+      onExit: exitToMenu,
+    };
+    unmountScreen = mountPlacement(appEl, deps);
     return;
   }
+  if (next === "battle") {
+    unmountScreen = mountBattlePlaceholder(appEl);
+    return;
+  }
+  unmountScreen = mountLobby(appEl, lobbyDeps(controller));
+}
 
-  // "placement" and "battle" belong to screens/placement.ts (T-11) and
-  // screens/battle.ts (T-12); those files do not exist in this branch yet.
+function startGame(next: GameController): void {
+  unsubscribe();
+  controller?.dispose();
+  controller = next;
+  unsubscribe = next.subscribe((snapshot) => {
+    const next2 = routeFor(snapshot);
+    if (next2 !== route) {
+      mountScreen(next2);
+    }
+  });
 }
 
 function exitToMenu(): void {
-  stopGame();
-  history.replaceState(null, "", "/");
-  unmountScreen();
-  unmountScreen = mountMenu(appEl, menuDeps);
+  unsubscribe();
+  controller?.dispose();
+  controller = null;
+  mountScreen("menu");
 }
 
 const menuDeps: MenuDeps = {
   onPlayAi(difficulty: AiDifficulty): void {
-    console.log("starting AI game, difficulty:", difficulty);
+    startGame(
+      createLocalController({
+        difficulty,
+        seed: params.seed,
+        aiDelayMs: params.aiDelayMs,
+      }),
+    );
   },
   onPlayOnline(): void {
-    mountOnline();
+    startGame(createOnlineController({ intent: { kind: "create" } }));
   },
 };
 
 function main(): void {
-  const params = readParams(location.search, Math.floor(Math.random() * 2 ** 32));
   if (params.room !== null) {
     // Opening /?room=CODE auto-joins that room.
-    startGame({ kind: "join", room: params.room });
+    startGame(createOnlineController({ intent: { kind: "join", room: params.room } }));
   }
-  mountOnline();
+  mountScreen("menu");
 }
 
 main();

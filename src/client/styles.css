@@ -126,3 +126,47 @@ p[data-testid="lobby-error"] {
   color: var(--danger);
   min-height: 24px;
 }
+
+/* === placement (T-11) === */
+section[data-testid="screen-placement"] {
+  align-items: start;
+  gap: 16px;
+}
+section[data-testid="screen-placement"] header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+section[data-testid="screen-placement"] h1 {
+  margin: 0;
+  font-size: 20px;
+}
+section[data-testid="screen-placement"] button[data-testid^="ship-"] {
+  display: block;
+  margin: 0 auto;
+  font-size: 14px;
+}
+section[data-testid="screen-placement"] button[data-testid^="ship-"][data-selected] {
+  border: 2px solid var(--accent);
+  font-weight: 700;
+}
+section[data-testid="screen-placement"] button[data-testid^="ship-"]:not([data-placed]) {
+  opacity: 1;
+}
+section[data-testid="screen-placement"] button[data-testid^="ship-"][data-placed] {
+  opacity: 0.45;
+}
+section[data-testid="screen-placement"] button[data-testid="btn-ready"]:not([disabled]) {
+  border: 2px solid var(--accent);
+}
+section[data-testid="screen-placement"] [data-testid="placement-error"] {
+  color: var(--danger);
+  min-height: 24px;
+}
+section[data-testid="screen-placement"] [data-testid="placement-waiting"] {
+  color: var(--muted);
+  min-height: 24px;
+}
+section[data-testid="screen-placement"] [data-testid="placement-waiting"][hidden] {
+  display: none;
+}

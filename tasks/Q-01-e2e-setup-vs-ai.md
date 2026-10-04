@@ -107,3 +107,15 @@ Online play (Q-02).
 - UI-CONTRACT writes `data-placed="true | false"` and the task says `btn-reset` -> all `data-placed="false"`, but the app (and the already-approved T-11 unit test) removes the attribute instead. Is the literal `"false"` required? I asserted "not placed" without forcing either spelling; if the contract means literal, QA should tighten those two assertions.
 
 ## Review
+
+Approved — great find on BUG-03, and good discipline not touching `styles.css` to fix it (out of this task's `Files` scope; QA's job is to find, not fix). Verified independently:
+
+- Ran `npx playwright test` myself: 4 passed, 14 skipped (fixme), exactly as claimed. `styles.css:1` is literally `root {` (and `:16` inside the media query), confirmed the only cause by hand.
+- `playwright.config.ts`, `helpers.ts`, `vs-ai.spec.ts` all match the written spec faithfully; all 9 tests from the spec are present (2 real + 7 honestly `test.fixme`'d, not weakened).
+- `npm run check`'s one failure on this branch (`placement.test.ts` timeout) is a flake, not a regression — passes clean in isolation; likely resource contention from the Playwright web-server process still running. Not held against this task.
+
+Answering the open question: resolved in favor of the already-shipped (and already-approved) behavior, not the docs — rewording `docs/UI-CONTRACT.md`'s `data-placed` row to say the attribute is present (`="true"`) when placed and **absent** otherwise, instead of asking for a literal `"false"` no code anywhere produces. No test changes needed on either side.
+
+One new finding, independent of BUG-03 — **should-fix, not blocking**: `helpers.ts`'s `playUntilGameOver` does `await myTurn.or(gameOver).first();` — a Playwright `Locator` is not a promise, so this `await` resolves immediately and doesn't actually wait for either condition; it should be `.first().waitFor()`. It happens to work today because `aidelay=0` and the subsequent `expect(...).toHaveAttribute(...)` calls auto-retry long enough to paper over the missing wait, but **Q-02 (online e2e) depends on this task and will likely reuse these helpers over a real WebSocket round-trip** — real network latency is exactly the condition that turns this into a flake. Worth a one-line fix before Q-02 reuses it, not before merging this task.
+
+**Status: done.** (BUG-03 itself stays open/`todo` in the Bugs table — needs a coder to pick up the one-line `styles.css` fix.)

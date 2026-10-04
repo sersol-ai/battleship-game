@@ -28,7 +28,7 @@ A task is **ready** when every dependency is `done`. Tasks in the same wave can 
 | T-16 | Server: HTTP + WebSocket            | coder     | T-13, T-14, T-15 | 6    | done   |
 | T-17 | WebSocket client + OnlineController | coder     | T-09             | 7    | done   |
 | T-18 | Lobby + online wiring               | coder     | T-12, T-16, T-17 | 9    | done   |
-| Q-01 | Playwright setup + vs-AI e2e        | qa        | T-12             | 9    | review |
+| Q-01 | Playwright setup + vs-AI e2e        | qa        | T-12             | 9    | done   |
 | D-01 | Dockerfile + CI                     | devops    | T-16, Q-01       | 10   | todo   |
 | Q-02 | Online e2e                          | qa        | T-18, Q-01       | 10   | todo   |
 | D-02 | Release workflow (GHCR)             | devops    | D-01             | 11   | todo   |

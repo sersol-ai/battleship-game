@@ -36,15 +36,15 @@ A cell is found with: `[data-testid=grid-enemy] [data-testid=cell][data-x="3"][d
 
 ## Placement screen
 
-| testid              | element / behaviour                                                             |
-| ------------------- | ------------------------------------------------------------------------------- |
-| `ship-<type>`       | one per ShipType, e.g. `ship-carrier`; attr `data-placed="true                  | false"`; attr `data-selected="true | false"`; click selects it |
-| `btn-rotate`        | toggles orientation H/V (keyboard `R` does the same); attr `data-orientation="H | V"`                                |
-| `btn-random`        | replaces current layout with a random valid fleet                               |
-| `btn-reset`         | removes all placed ships                                                        |
-| `btn-ready`         | `disabled` until all ships placed; click → `controller.place(fleet)`            |
-| `placement-error`   | visible text when the last click was an invalid spot; empty otherwise           |
-| `placement-waiting` | visible after Ready while waiting for opponent                                  |
+| testid              | element / behaviour                                                                                                                                                           |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ship-<type>`       | one per ShipType, e.g. `ship-carrier`; attr `data-placed="true"` when placed, absent otherwise; attr `data-selected="true"` when selected, absent otherwise; click selects it |
+| `btn-rotate`        | toggles orientation H/V (keyboard `R` does the same); attr `data-orientation="H                                                                                               | V"` |
+| `btn-random`        | replaces current layout with a random valid fleet                                                                                                                             |
+| `btn-reset`         | removes all placed ships                                                                                                                                                      |
+| `btn-ready`         | `disabled` until all ships placed; click → `controller.place(fleet)`                                                                                                          |
+| `placement-error`   | visible text when the last click was an invalid spot; empty otherwise                                                                                                         |
+| `placement-waiting` | visible after Ready while waiting for opponent                                                                                                                                |
 
 Clicking a placed ship on the grid picks it up again (it becomes selected and unplaced).
 

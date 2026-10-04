@@ -1,102 +1,170 @@
-// T-16 — Server: HTTP + WebSocket wiring
-
-import http, { IncomingMessage, ServerResponse } from "node:http";
-import { WebSocketServer } from "ws";
+import { createServer } from "node:http";
+import { randomBytes, randomInt, randomUUID } from "node:crypto";
 import { MAX_MESSAGE_BYTES } from "../shared/protocol.ts";
+import type { IncomingMessage } from "node:http";
+import type { ServerMessage } from "../shared/protocol.ts";
 import { parseClientMessage } from "../shared/guards.ts";
-import rooms from "./rooms.ts";
+import { createRng } from "../shared/rng.ts";
+import { createRoomManager } from "./rooms.ts";
+import type { ConnId } from "./rooms.ts";
+import { createStaticHandler } from "./static.ts";
+import { WebSocket, WebSocketServer } from "ws";
+import type { Duplex } from "node:stream";
 
-interface ConnId {
-  conn: WebSocket;
-  readyState: number;
+const DEFAULT_SWEEP_INTERVAL_MS = 10_000;
+const DEFAULT_PING_INTERVAL_MS = 30_000;
+
+export interface ServerOptions {
+  port: number; // 0 = random (tests)
+  staticDir: string;
+  sweepIntervalMs?: number; // default 10_000
+  pingIntervalMs?: number; // default 30_000
 }
 
-class RoomManager {
-  private rooms: Map<string, Room> = new Map();
-  private sockets: Map<string, ConnId> = new Map();
+export interface RunningServer {
+  port: number; // actual bound port
+  close(): Promise<void>; // clears intervals, terminates all sockets, closes http server
+}
 
-  constructor() {}
+export async function startServer(opts: ServerOptions): Promise<RunningServer> {
+  const sweepIntervalMs = opts.sweepIntervalMs ?? DEFAULT_SWEEP_INTERVAL_MS;
+  const pingIntervalMs = opts.pingIntervalMs ?? DEFAULT_PING_INTERVAL_MS;
 
-  create(): { ok: boolean; value?: string; error?: string } {
-    if (this.rooms.size >= 500) return { ok: false, error: "SERVER_BUSY" };
-    const code = generateRoomCode();
-    const room: Room = { code, players: new Set() };
-    this.rooms.set(code, room);
-    return { ok: true, value: code };
+  const sockets = new Map<ConnId, WebSocket>();
+  const alive = new Map<ConnId, boolean>();
+
+  function log(event: string, data: Record<string, unknown>): void {
+    console.log(JSON.stringify({ ts: new Date().toISOString(), event, ...data }));
   }
 
-  join(code: string): { ok: boolean; error?: string; value?: string } {
-    const room = this.rooms.get(code);
-    if (!room) return { ok: false, error: "ROOM_NOT_FOUND" };
-    if (room.players.size >= 2) return { ok: false, error: "ROOM_FULL" };
-    return { ok: true, value: code };
+  function send(conn: ConnId, msg: ServerMessage): void {
+    const socket = sockets.get(conn);
+    if (socket === undefined || socket.readyState !== WebSocket.OPEN) return;
+    socket.send(JSON.stringify(msg));
   }
 
-  resume(code: string, token: string): { ok: boolean; error?: string } {
-    const room = this.rooms.get(code);
-    if (!room) return { ok: false, error: "ROOM_NOT_FOUND" };
-    if (!room.players.has(token)) return { ok: false, error: "BAD_TOKEN" };
-    return { ok: true };
-  }
+  const manager = createRoomManager({
+    send,
+    now: Date.now,
+    rng: createRng(randomInt(2 ** 32)),
+    newToken: () => randomBytes(16).toString("hex"),
+    log: (event, data) => {
+      log(event, data);
+    },
+  });
 
-  leave(code: string, token: string) {
-    const room = this.rooms.get(code);
-    room?.players.delete(token);
-  }
+  const staticHandler = createStaticHandler(opts.staticDir);
 
-  onAddConnection(connId: string) {
-    const entry: ConnId = { conn: {} as WebSocket, readyState: 0 };
-    this.sockets.set(connId, entry);
-  }
-
-  onRemoveConnection(connId: string) {
-    const e = this.sockets.get(connId);
-    if (e) {
-      if (e.readyState === 1) {
-        this.send(connId, JSON.stringify({ t: "error", code: "NOT_IN_ROOM", message: "Disconnected" }));
-      }
-      this.sockets.delete(connId);
+  function isHealthz(url: string | undefined): boolean {
+    try {
+      return new URL(url ?? "/", "http://x").pathname === "/healthz";
+    } catch {
+      return false;
     }
   }
 
-  onMessage(connId: string, msg: string) {
-    const e = this.sockets.get(connId);
-    if (e && msg === "pong") e.readyState = 1;
-  }
+  const httpServer = createServer((req, res) => {
+    if (req.method === "GET" && isHealthz(req.url)) {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, rooms: manager.roomCount() }));
+      return;
+    }
+    staticHandler(req, res);
+  });
 
-  send(connId: string, msg: string) {
-    const e = this.sockets.get(connId);
-    if (e && e.readyState === 1) e.conn.send(msg);
-  }
+  const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_MESSAGE_BYTES });
 
-  disconnect(connId: string) {
-    this.onRemoveConnection(connId);
-  }
+  wss.on("connection", (ws) => {
+    const conn = randomUUID();
+    sockets.set(conn, ws);
+    alive.set(conn, true);
 
-  startPing() {
-    setInterval(() => {
-      for (const e of this.sockets.values()) {
-        if (!e) continue;
-        if (!e.readyState) e.conn.terminate();
-        else e.readyState = 1;
+    ws.on("message", (data, isBinary) => {
+      try {
+        if (isBinary) {
+          send(conn, {
+            t: "error",
+            code: "BAD_MESSAGE",
+            message: "Binary frames are not accepted.",
+          });
+          return;
+        }
+        const msg = parseClientMessage(data.toString());
+        if (msg === null) {
+          send(conn, { t: "error", code: "BAD_MESSAGE", message: "That message is not allowed." });
+          return;
+        }
+        manager.handleMessage(conn, msg);
+      } catch (error) {
+        log("handler_error", { conn, error: String(error) });
       }
-    }, 30_000);
-  }
+    });
 
-  sweep() {
-    setInterval(() => {
-      for (const e of this.sockets.values()) {
-        if (!e) continue;
-        if (!e.readyState) e.conn.terminate();
-        else e.readyState = 1;
+    ws.on("pong", () => {
+      alive.set(conn, true);
+    });
+
+    ws.on("close", () => {
+      sockets.delete(conn);
+      alive.delete(conn);
+      manager.handleDisconnect(conn);
+    });
+
+    ws.on("error", (error) => {
+      log("socket_error", { conn, error: String(error) });
+    });
+  });
+
+  httpServer.on("upgrade", (req: IncomingMessage, socket: Duplex, headers: Buffer) => {
+    let pathname = "";
+    try {
+      pathname = new URL(req.url ?? "/", "http://x").pathname;
+    } catch {
+      socket.destroy();
+      return;
+    }
+    if (pathname !== "/ws") {
+      socket.destroy();
+      return;
+    }
+    wss.handleUpgrade(req, socket, headers, (client) => {
+      wss.emit("connection", client, req);
+    });
+  });
+
+  const pingTimer = setInterval(() => {
+    for (const [conn, ws] of sockets) {
+      if (!alive.get(conn)) {
+        ws.terminate();
+        continue;
       }
-    }, 10_000);
+      alive.set(conn, false);
+      ws.ping();
+    }
+  }, pingIntervalMs);
+
+  const sweepTimer = setInterval(() => {
+    manager.sweep();
+  }, sweepIntervalMs);
+
+  httpServer.listen(opts.port);
+  const address = httpServer.address();
+  if (address === null || typeof address === "string") {
+    throw new Error("the http server did not bind a port");
   }
+  const port = address.port;
+  log("server_started", { port });
 
-  size() { return this.rooms.size; }
-
-  private readonly intervals = new Set<number>();
+  return {
+    port,
+    close: async (): Promise<void> => {
+      clearInterval(pingTimer);
+      clearInterval(sweepTimer);
+      for (const ws of sockets.values()) ws.terminate();
+      sockets.clear();
+      alive.clear();
+      wss.close();
+      await httpServer.close();
+    },
+  };
 }
-
-const rooms = new RoomManager();
-export default rooms;

@@ -115,6 +115,15 @@ Lobby UI (T-18).
 
 ## Coder notes
 
+- WsClient state machine matches the spec: connecting → open → reconnecting (backoff, last value repeats) → closed.
+- Messages sent while the socket is down are queued (cap 20, oldest dropped) and replayed in order on the next open; `onOpen()` runs after the flush.
+- `FakeWebSocket.instances` is static and shared by every test in a file, so tests compare instance-count deltas instead of absolute counts.
+- `new WebSocket(url)` (DOM lib type) is not structurally assignable to `WsLike` (its `onopen` handler param is `Event`), so the default factory needs one `as WsLike` cast; runtime behaviour is unchanged.
+- The default `storage` is read inside `try/catch`, so Node/vitest gets `null` instead of a ReferenceError; tests pass an explicit in-memory store.
+- Resume bookkeeping: `resuming` means "the message we just sent was `resume`"; only then do BAD_TOKEN / ROOM_NOT_FOUND clear the session, and a stored-session resume re-sends `join` exactly once.
+- `dispose()` sends `leave` before `client.close()` so the frame still reaches an open socket.
+- `npm run check`: 17 files / 167 tests pass (4 ws-client + 6 online-controller).
+
 ## Questions for architect
 
 ## Review

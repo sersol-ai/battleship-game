@@ -1,8 +1,8 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import * as fs from "node:fs";
-import { join, resolve, extname } from "node:path";
+import { lstat, readFile } from "node:fs/promises";
+import { join, resolve, sep, extname } from "node:path";
 
-const ContentType: Record<string, string> = {
+const CONTENT_TYPES: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -15,92 +15,105 @@ const ContentType: Record<string, string> = {
   ".webmanifest": "application/manifest+json",
 };
 
-function CacheControl(normPathname: string): string {
-  return normPathname.startsWith("/assets/")
-    ? "public, max-age=31536000, immutable"
-    : "no-cache";
+const IMMUTABLE_CACHE = "public, max-age=31536000, immutable";
+
+function contentType(filePath: string): string {
+  return CONTENT_TYPES[extname(filePath)] ?? "application/octet-stream";
+}
+
+function cacheControl(pathname: string): string {
+  return pathname.startsWith("/assets/") ? IMMUTABLE_CACHE : "no-cache";
+}
+
+/** `lstat` (not `stat`) so a symlink can never point outside the served root. */
+async function readRegularFile(path: string): Promise<Buffer | null> {
+  try {
+    const stats = await lstat(path);
+    if (!stats.isFile()) return null;
+    return await readFile(path);
+  } catch {
+    return null;
+  }
 }
 
 export function createStaticHandler(
   rootDir: string,
 ): (req: IncomingMessage, res: ServerResponse) => void {
-  const rootResolved = resolve(rootDir);
-  const rootResolvedTrailing = rootResolved + "/";
+  const root = resolve(rootDir);
 
-  const handler = (req: IncomingMessage, res: ServerResponse): void => {
+  async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    const nosniff = { "X-Content-Type-Options": "nosniff" };
+
+    function fail(status: number, body: string, extra: Record<string, string>): void {
+      res.writeHead(status, { ...nosniff, ...extra });
+      res.end(body);
+    }
+
     if (req.method !== "GET" && req.method !== "HEAD") {
-      res.setHeader("Allow", "GET, HEAD");
-      res.writeHead(405, { "Content-Type": "text/plain" });
-      res.end("Method Not Allowed");
+      fail(405, "Method Not Allowed", { Allow: "GET, HEAD" });
       return;
     }
 
     let pathname: string;
     try {
-      pathname = decodeURIComponent(req.url ?? "");
+      const url = new URL(req.url ?? "/", "http://x");
+      const requested = decodeURIComponent((req.url ?? "/").replace(/[?#].*/, ""));
+      // `new URL` folds `..` segments into the path, so a traversal attempt would
+      // otherwise reach the SPA fallback and answer 200. Reject it with 404, and
+      // reject anything whose host is not the base (absolute / protocol-relative URLs).
+      if (url.host !== "x" || requested.split("/").some((s) => s === "." || s === "..")) {
+        fail(404, "Not found", {});
+        return;
+      }
+      pathname = decodeURIComponent(url.pathname);
     } catch {
-      res.writeHead(400, { "Content-Type": "text/plain" });
-      res.end("Bad Request");
+      fail(400, "Bad Request", {});
       return;
     }
 
-    const absPath = pathname
-      ? join(rootResolved, pathname.replace(/\/+$/, ""))
-      : rootResolved;
+    if (pathname === "/" || pathname === "") pathname = "/index.html";
 
-    const resolved = absPath;
-    if (!resolved.startsWith(rootResolvedTrailing)) {
-      res.writeHead(404, { "Content-Type": "text/plain" });
-      res.end("Not found");
+    const target = join(root, pathname);
+    if (!target.startsWith(root + sep)) {
+      fail(404, "Not found", {});
       return;
     }
 
-    const st = fs.existsSync(resolved)
-      ? fs.statSync(resolved)
-      : undefined;
-
-    if (st?.isFile()) {
-      const ext = extname(pathname) || "";
-      const ctype = ContentType[ext] || "application/octet-stream";
+    function send(body: Buffer, filePath: string): void {
       res.writeHead(200, {
-        "Content-Length": String(st.size),
-        "Content-Type": ctype,
-        "Cache-Control": CacheControl(pathname || ""),
-        "X-Content-Type-Options": "nosniff",
+        "Content-Type": contentType(filePath),
+        "Content-Length": String(body.length),
+        "Cache-Control": cacheControl(pathname),
+        ...nosniff,
       });
       if (req.method === "HEAD") {
         res.end();
         return;
       }
-      fs.createReadStream(resolved).pipe(res);
+      res.end(body);
+    }
+
+    const body = await readRegularFile(target);
+    if (body !== null) {
+      send(body, target);
       return;
     }
 
-    const ext = extname(pathname);
-    if (ext) {
-      res.writeHead(404, { "Content-Type": "text/plain" });
-      res.end("Not found");
+    if (extname(pathname) !== "") {
+      fail(404, "Not found", {});
       return;
     }
 
-    const indexPath = join(resolved, "index.html");
-    if (fs.existsSync(indexPath) && fs.statSync(indexPath).isFile()) {
-      res.writeHead(200, {
-        "Content-Type": ContentType[".html"],
-        "Cache-Control": CacheControl(pathname || ""),
-        "X-Content-Type-Options": "nosniff",
-      });
-      if (req.method === "HEAD") {
-        res.end();
-        return;
-      }
-      fs.createReadStream(indexPath).pipe(res);
+    const index = await readRegularFile(join(root, "index.html"));
+    if (index !== null) {
+      send(index, join(root, "index.html"));
       return;
     }
 
-    res.writeHead(404, { "Content-Type": "text/plain" });
-    res.end("Not found");
+    fail(404, "Not found", {});
+  }
+
+  return (req: IncomingMessage, res: ServerResponse): void => {
+    route(req, res).catch(() => undefined);
   };
-
-  return handler;
 }

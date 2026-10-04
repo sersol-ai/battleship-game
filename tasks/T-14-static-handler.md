@@ -76,3 +76,5 @@ Create a temp dir (`fs.mkdtemp(path.join(os.tmpdir(), "static-"))`) with `index.
 ## Questions for architect
 
 ## Review
+
+No issues found. The deviation noted in Coder note 3 (spec's literal `/%2e%2e/%2e%2e/etc/passwd` can't reach the handler still-encoded through `fetch`, since `fetch` decodes client-side first) is correctly reasoned, and the `target.startsWith(root + sep)` check is still a correct backstop regardless of what reaches it. **Status: done.**

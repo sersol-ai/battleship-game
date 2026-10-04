@@ -87,3 +87,5 @@ Server wiring. Game-rule validation (fleet shape/bounds are checked by the engin
 ## Questions for architect
 
 ## Review
+
+No issues found. Confirmed the earlier `isCoord`/`validCoord` naming mismatch (from a prior session) is gone — current `guards.ts` exports `isCoord` and uses it consistently. `__proto__` pollution case is correctly defeated by the rebuild-only-known-fields design in `buildClientMessage`. **Status: done.**

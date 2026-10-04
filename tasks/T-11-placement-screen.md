@@ -117,3 +117,19 @@ Battle screen, online.
 - Battle and lobby placeholders: battle renders `<section data-testid="screen-battle">Battle (T-12)</section>` per spec; lobby is the real T-18 screen, not a placeholder.
 
 ## Review
+
+**BLOCKER** — `src/client/screens/placement.ts:258-264`. The `waiting`/`hidden` branches in `refresh()` are inverted:
+
+```ts
+if (waiting) {
+  waitingText.textContent = "Waiting for opponent…";
+  readyButton.toggleAttribute("disabled", true);
+} else {
+  waitingText.removeAttribute("hidden");
+  waitingText.textContent = "";
+}
+```
+
+When `waiting` is true, `hidden` is never removed, so `placement-waiting` stays invisible exactly when it should show. When `waiting` is false, `hidden` is removed, making an empty element visible. Per `docs/UI-CONTRACT.md`, `placement-waiting` must be visible after Ready while waiting for the opponent — as written it never will be. Fix: swap which branch calls `removeAttribute("hidden")` vs sets it back. Not caught by `placement.test.ts:293-294`, which only asserts `.textContent`/`disabled` — add a `hasAttribute("hidden")` assertion for both states when fixing.
+
+**Status: back to `in-progress`.**

@@ -94,3 +94,10 @@ Animations/sounds (maybe later task).
 ## Questions for architect
 
 ## Review
+
+No real bugs. Two non-blocking nitpicks, fix at your discretion (not worth a round-trip on their own):
+
+- `errorLine`'s `hidden` attribute is never set/cleared — relies on empty text content instead. Harmless; no `UI-CONTRACT.md` testid depends on `hidden` for this element, but inconsistent with the `btn-menu`/`game-over` pattern elsewhere in this same file.
+- Unused `shot` local around line 206.
+
+**Status: done.**

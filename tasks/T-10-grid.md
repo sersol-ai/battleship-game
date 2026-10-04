@@ -109,3 +109,7 @@ T-11 and T-12 depend on T-10. Without a grid component, there's no UI for:
 2. Resolved from source: the path is `src/client/ui/grid.ts` — the `docs/ARCHITECTURE.md` file map lists `ui/grid.ts  T-10  reusable 10x10 grid component` under `client/`, and both T-11 and T-12 name `src/client/ui/grid.ts` (exports) in their Read-first. The stale report's `src/client/screens/grid.ts` is wrong.
 3. Should the component follow the repo convention instead of the `Grid` class in the report? Simplest reading: `export function mountGrid(root: HTMLElement, deps: GridDeps): () => void`, re-rendered when the controller snapshot changes — no `.render(viewBoard: PlayerView)` and no `event: MouseEvent` parameter (the DOM lib's `MouseEvent` is an event object with no x/y; the repo's screens attach listeners and read `data-x`/`data-y` off the clicked cell).
 4. Please confirm "no React": adding it means new npm dependencies plus a vite config change, and the repo rules forbid adding dependencies unless the task says so.
+
+## Review
+
+Approved — answering round 2 directly: (2) confirmed, `src/client/ui/grid.ts` is correct per `docs/ARCHITECTURE.md`'s file map and what T-11/T-12 already import; (3) confirmed, `mountGrid(root, deps): () => void` with method-shaped `GridDeps` is the right call, matches `mountMenu`/`mountLobby`; (4) confirmed, no React — stay native DOM. No code issues found in `grid.ts`/`grid.test.ts`. The self-authored spec is a reasonable permanent record; not rewriting the task file from scratch, this review stands in for that. **Status: done.**

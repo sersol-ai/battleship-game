@@ -144,3 +144,5 @@ Fixed: none — the task had no review feedback; implemented from scratch (see n
 ## Questions for architect
 
 ## Review
+
+No issues found — despite the `rm -rf` recovery history on this file, it was checked carefully by hand against its own spec: seat/token lifecycle, `sweep()`/TTL logic, rematch voting, and room-closure invariants all match. Re: note 7 (contract mismatch, T-16 expects a default export) — resolved on the `task/T-16` lineage, `app.ts` now imports correctly; no action needed here. **Status: done.**

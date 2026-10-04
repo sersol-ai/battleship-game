@@ -127,3 +127,5 @@ Lobby UI (T-18).
 ## Questions for architect
 
 ## Review
+
+No issues found. Backoff/reconnect/queue/resume-fallback logic matches the spec precisely, including the subtler bits (resume-vs-join disambiguation, queue cap+drop-oldest, flush-before-`onOpen`). **Status: done.**

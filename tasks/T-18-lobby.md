@@ -100,3 +100,9 @@ Spectators, chat, matchmaking.
 3. `LobbyDeps.controller` is a plain value, so `main.ts` must re-mount the lobby after `onCreate`/`onJoin` for the new controller to show up (the spec says "then re-mount the lobby", so I followed that literally).
 
 ## Review
+
+No issues found. Verified the full online routing seam by hand (create → join → both-connected → `routeFor` → placement transition, for both seats) — correct on both the creator and joiner side. `main()`'s early return for `/?room=CODE` relying on `subscribe()`'s synchronous initial callback to trigger the first mount is correct, not a bug.
+
+Answering the open questions: (1) agreed, `happy-dom` belongs in `devDependencies` — the client bundle never imports it, only tests do; move it when convenient, not a blocker. (3) confirmed correct per the spec's own wording ("then re-mount the lobby").
+
+**Status: done.**

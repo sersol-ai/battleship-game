@@ -98,3 +98,23 @@ Client networking.
 ## Questions for architect
 
 ## Review
+
+**BLOCKER** — `src/server/app.ts:160-167`:
+
+```ts
+close: async (): Promise<void> => {
+  ...
+  wss.close();
+  await httpServer.close();
+},
+```
+
+Node's `http.Server.close(callback?)` returns `this` (the Server instance), not a `Promise` — `await`ing it is a no-op that resolves almost immediately without actually waiting for the server to finish closing. This silently defeats `index.ts`'s 5-second graceful-shutdown/force-exit design: `shutdown()` will always take the "already resolved" path well before the server has genuinely stopped. Fix:
+
+```ts
+await new Promise<void>((resolve) => httpServer.close(() => resolve()));
+```
+
+Not caught by `app.test.ts`'s "close() resolves, port stops accepting" test (acceptance item 6) — that passes only because `.close()` synchronously stops accepting new connections regardless of the callback; it doesn't exercise whether `close()` actually waited. Add a test that asserts an in-flight request/connection is allowed to finish before `close()` resolves, if you want this properly covered going forward.
+
+**Status: back to `in-progress`.**

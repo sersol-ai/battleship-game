@@ -81,6 +81,16 @@ Animations/sounds (maybe later task).
 
 ## Coder notes
 
+- `mountBattle(root, deps)` builds `screen-battle` + header (`turn-indicator`, `btn-menu`) + `grid-own`/`grid-enemy` via the real T-10 `mountGrid` (own grid mounted without `onCellClick`, enemy grid clickable only when `view.isMyTurn`), plus `my-remaining`/`enemy-remaining` `<ul data-count>`, `last-shot`, error line, and a `game-over` `div role="dialog"` with `btn-rematch` + a second `btn-menu`.
+- Header `btn-menu` gets `hidden` while `game-over` is shown (contract: only ONE `btn-menu` visible at a time); the dialog copy stays live.
+- `btn-rematch` click → `controller.rematch()` then `disabled` + "Waiting for opponent…"; re-enabled on the next render.
+- `last-shot` text: `You: A1 sunk destroyer` / `Enemy: B2 miss` — "You" when `lastShot.by === view.me`; `formatCoord` from `view.ts`.
+- Clicking a cell that is not `unknown` is ignored client-side (no `fire` call), plus the grid's own `clickable()` gate.
+- `main.ts`: replaced T-11's `mountBattlePlaceholder` with `mountBattleScreen()` using `BattleDeps { controller, onExit: exitToMenu }`; battle mount is a no-op if no controller is live.
+- `styles.css`: added `/* === battle (T-12) === */` — boards side-by-side ≥720px (stacked below), `game-over` fixed overlay, `hidden` menu copy hidden.
+- Surprising: `ShotResult` has no `by` field (that lives on `PlayerView.lastShot`), so `shotText` takes the whole `lastShot` object, not a `ShotResult`.
+- `npm run check` green: 21 files / 195 tests (9 new battle tests).
+
 ## Questions for architect
 
 ## Review

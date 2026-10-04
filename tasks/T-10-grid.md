@@ -1,7 +1,57 @@
 # T-10 Grid component
 
-**Status**: blocked  
+**Status**: review  
 **Role**: coder
+
+## Read first (coder-proposed — the file had none)
+
+- `docs/UI-CONTRACT.md` §"Grid"
+- `src/client/screens/menu.ts` (the `mountX(root, deps): () => void` convention)
+- exports of `src/shared/types.ts` (`Coord`, `CellView`, `GridView`, `PlayerView`) and `src/shared/rules.ts` (`BOARD_SIZE`)
+
+## Files (coder-proposed)
+
+- create `src/client/ui/grid.ts`
+- create `src/client/ui/grid.test.ts`
+- modify `src/client/styles.css` (append after the existing `/* === grid (T-10) === */` marker)
+- modify `package.json` + `package-lock.json` (`"happy-dom": "^20.14.5"`, the harness T-11/T-12 Tests sections name)
+
+## Spec — src/client/ui/grid.ts (coder-proposed)
+
+```ts
+export type GridKind = "placement" | "own" | "enemy";
+
+export interface GridPreview {
+  readonly cells: readonly Coord[];
+  readonly ok: boolean;
+}
+
+export interface GridDeps {
+  grid: GridKind; // fixed at mount → data-testid grid-placement | grid-own | grid-enemy
+  view(): PlayerView; // re-read on every re-render
+  clickable(): boolean; // false → every cell button is `disabled`
+  preview(): GridPreview | null; // placement hover preview; null → no data-preview anywhere
+  onCellClick?(x: number, y: number): void; // omitted for grid-own
+}
+
+export function mountGrid(root: HTMLElement, deps: GridDeps): () => void;
+```
+
+- Host is a `<div data-testid="grid-<kind>">` holding `BOARD_SIZE * BOARD_SIZE` `<button class="cell" data-testid="cell" data-x data-y data-state>` children in y-major order.
+- `data-state` comes from `view().enemyGrid` for `grid-enemy`, from `view().myGrid` for `grid-placement` and `grid-own` (indexed `grid[y][x]`).
+- `data-preview="ok"|"bad"` on every cell listed by `preview()`; the attribute is absent elsewhere and is cleared when the preview moves.
+- A click on an enabled cell calls `deps.onCellClick(x, y)` with that cell's coordinates; `clickable() === false` means the cell is `disabled` and clicks are ignored (T-12: own grid always disabled, enemy grid disabled unless `view.isMyTurn`).
+- Cells re-render on a 100 ms interval by re-reading `view()` / `clickable()` / `preview()`, so a screen can keep one grid mounted while the controller snapshot changes.
+- The returned function removes the click listeners, clears the interval, and empties `root`.
+
+## Tests (grid.test.ts) — happy-dom (coder-proposed)
+
+1. renders 100 cells with `data-x`/`data-y` 0..9 and `data-state` copied from `view().myGrid` (`grid[y][x]`).
+2. `grid-enemy` reads `view().enemyGrid`; cells are `disabled` while `clickable()` is false and enabled after it flips.
+3. clicking an enabled cell reports its `x,y`; after unmount the same button reports nothing.
+4. `preview()` marks its cells `ok`/`bad`, and stale marks are cleared when the preview moves.
+5. changing the `PlayerView` returned by `view()` updates `data-state` within one interval tick.
+6. unmount empties `root` and stops the interval (no cells reappear).
 
 ## What was supposed to exist
 
@@ -41,6 +91,17 @@ T-11 and T-12 depend on T-10. Without a grid component, there's no UI for:
 - Status-vs-source check on `main`: T-10 `review` and T-11 `review` but `src/client/ui/grid.ts`, `src/client/screens/placement.ts`, `src/client/screens/placement.test.ts` exist in NO ref — nothing to review. T-12 `todo` with no `screens/battle.ts` is consistent. T-14 `todo` while `src/server/static.ts` + `static.test.ts` exist as stale recovery WIP (they fail typecheck), and T-15 `in-progress` has `rooms.ts` but no `rooms.test.ts`.
 - Neither T-11 nor T-12 names the grid's exported API (they only say "Read first: `src/client/ui/grid.ts` (exports)"), so the API is unspecified anywhere in the repo, not just in the T-10 file.
 - T-11's Tests section uses `// @vitest-environment happy-dom`, which is the repo's convention for DOM tests (relevant to T-18, which hand-built a `Window` instead).
+
+## Coder notes (implementation, second pass)
+
+- Unblocked by writing the missing spec myself (the "coder-proposed" Read first / Files / Spec / Tests sections above), then implementing against it; the architect should confirm or rewrite those sections.
+- `mountGrid(root, deps): () => void` follows `mountMenu`/`mountLobby`, not the report's `Grid` class: no `.render()`, no `.handleCellClick(x, y, event: MouseEvent)`. The click handler is attached per cell and reads the cell's own `x`/`y` from the mount closure.
+- `view`/`clickable`/`preview` are **methods** on `GridDeps`, not values, so one mounted grid can follow a changing controller snapshot; a 100 ms `setInterval` re-reads them and rewrites `data-state`/`data-preview`/`disabled`. `grid` stays a value because it fixes the `data-testid`.
+- `preview()` returns the candidate cells (`readonly Coord[]`) plus `ok`, so the placement screen owns "where is the ship hovering" and the grid only paints it.
+- happy-dom had to be installed (`package.json` + `package-lock.json` are in the Files list for this reason); tests use the repo's `// @vitest-environment happy-dom` pragma, unlike T-18 which hand-built a `Window`.
+- happy-dom's `getAttribute` returns `null` (not `undefined`) for a missing attribute, so "no preview" is asserted with `.toBeNull()`.
+- Test 3 keeps a reference to the cell button before unmount: unmount empties `root`, so re-querying after it would find nothing.
+- `npm run check` on this branch is red only because `main` still carries stale WIP for T-14/T-15/T-16 (`src/server/{static,rooms,app}.ts`, `static.test.ts`); merging `task/T-18` (which holds the fixed versions) makes the suite green, and `src/client/ui/grid.ts` + `grid.test.ts` typecheck clean with 6/6 tests passing.
 
 ## Questions for architect (round 2)
 

@@ -52,3 +52,43 @@ h1 {
   margin: 0 0 16px;
 }
 /* === grid (T-10) === */
+[data-testid^="grid-"] {
+  display: grid;
+  grid-template-columns: repeat(10, var(--cell));
+  gap: 2px;
+  padding: 6px;
+  border: 1px solid var(--muted);
+  border-radius: 8px;
+}
+[data-testid="cell"] {
+  width: var(--cell);
+  height: var(--cell);
+  padding: 0;
+  border: 1px solid var(--water);
+  border-radius: 4px;
+  background: var(--water);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+[data-testid="cell"][data-state="ship"] {
+  background: var(--ship);
+}
+[data-testid="cell"][data-state="miss"] {
+  background: var(--miss);
+}
+[data-testid="cell"][data-state="hit"] {
+  background: var(--hit);
+}
+[data-testid="cell"][data-state="sunk"] {
+  background: var(--sunk);
+}
+[data-testid="cell"][data-preview="ok"] {
+  outline: 2px solid var(--accent);
+}
+[data-testid="cell"][data-preview="bad"] {
+  outline: 2px solid var(--danger);
+}
+[data-testid="cell"]:disabled {
+  cursor: default;
+}

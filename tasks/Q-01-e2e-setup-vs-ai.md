@@ -94,6 +94,16 @@ Online play (Q-02).
 
 ## Coder notes
 
+- Config, helpers and spec are exactly as the task prescribes. One API note: in Playwright 1.63 `describe` is not a top-level export, it is `test.describe`.
+- Chromium needed `libnss3`, `libnspr4`, `libasound2t64` (virtual package on 26.04); after `sudo apt-get install` them, `npx playwright install-deps chromium` is clean and the browser launches.
+- The difficulty `<select>` has no data attribute carrying its current value, so `startAiGame` focuses it, presses the option's first letter, and asserts `select.value`. Test 1 asserts the default the same way.
+- `playUntilGameOver` reads all 100 enemy `data-state` values in one `evaluateAll` call and clicks the first `unknown` (row-major). Same behaviour as the spec, one CDP round trip per shot instead of 100.
+- 7 of the 9 tests are `test.fixme` because of BUG-03: `styles.css` puts its variables on `root`, so `--cell` is undefined, every cell is 0x0 and cannot be clicked. With `:root` (the T-08 spec) all 18 runs pass in 55s; I verified that locally and reverted before committing.
+- `btn-reset` clears `data-placed` by removing the attribute (its approved unit test asserts `hasAttribute(...).toBe(false)`), so the e2e asserts `not.toHaveAttribute("data-placed", "true")` rather than `="false"`.
+- Final state: `npx playwright test` green (2 real tests x desktop/mobile, 7 fixme), `npm run format && npm run check` green.
+
 ## Questions for architect
+
+- UI-CONTRACT writes `data-placed="true | false"` and the task says `btn-reset` -> all `data-placed="false"`, but the app (and the already-approved T-11 unit test) removes the attribute instead. Is the literal `"false"` required? I asserted "not placed" without forcing either spelling; if the contract means literal, QA should tighten those two assertions.
 
 ## Review

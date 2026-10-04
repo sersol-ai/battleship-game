@@ -137,3 +137,5 @@ Fixed: 1 — in `refresh()` the `waiting` branch now calls `waitingText.removeAt
 
 `npm run check` green: typecheck + prettier + vitest, 21 files / 195 tests.
 **Status: review.**
+
+**Re-review**: confirmed by hand — `refresh()`'s `waiting` branch now calls `removeAttribute("hidden")`, the `else` branch calls `setAttribute("hidden", "")`; `placement.test.ts:124` and `:296` both assert `hasAttribute("hidden")`. Fix is correct. **Status: done.**

@@ -20,12 +20,12 @@ A task is **ready** when every dependency is `done`. Tasks in the same wave can 
 | T-08 | Client shell, params, routing, menu | coder     | —                | 1    | done   |
 | T-09 | LocalController (vs AI)             | coder     | T-04, T-06, T-07 | 6    | done   |
 | T-10 | Grid component                      | coder     | T-06, T-08       | 5    | done   |
-| T-11 | Placement screen + vs-AI wiring     | coder     | T-08, T-09, T-10 | 7    | review |
+| T-11 | Placement screen + vs-AI wiring     | coder     | T-08, T-09, T-10 | 7    | done   |
 | T-12 | Battle screen                       | coder     | T-11             | 8    | done   |
 | T-13 | Validate client messages (guards)   | coder     | —                | 1    | done   |
 | T-14 | Static file handler                 | coder     | —                | 1    | done   |
 | T-15 | RoomManager                         | coder     | T-01, T-05, T-06 | 5    | done   |
-| T-16 | Server: HTTP + WebSocket            | coder     | T-13, T-14, T-15 | 6    | review |
+| T-16 | Server: HTTP + WebSocket            | coder     | T-13, T-14, T-15 | 6    | done   |
 | T-17 | WebSocket client + OnlineController | coder     | T-09             | 7    | done   |
 | T-18 | Lobby + online wiring               | coder     | T-12, T-16, T-17 | 9    | done   |
 | Q-01 | Playwright setup + vs-AI e2e        | qa        | T-12             | 9    | todo   |
@@ -42,5 +42,5 @@ Milestones: **M1 engine** (T-01…T-07) · **M2 playable vs AI** (+T-08…T-12, 
 
 | ID     | Title                                                      | Severity | Found by  | Status |
 | ------ | ---------------------------------------------------------- | -------- | --------- | ------ |
-| BUG-01 | T-11 placement.ts: `placement-waiting` show/hide inverted  | blocker  | architect | open   |
-| BUG-02 | T-16 app.ts: `close()` doesn't actually await server close | blocker  | architect | open   |
+| BUG-01 | T-11 placement.ts: `placement-waiting` show/hide inverted  | blocker  | architect | fixed  |
+| BUG-02 | T-16 app.ts: `close()` doesn't actually await server close | blocker  | architect | fixed  |

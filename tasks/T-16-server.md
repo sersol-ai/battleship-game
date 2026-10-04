@@ -124,3 +124,5 @@ Not done: the suggested extra test (an in-flight request must finish before `clo
 
 `npm run check` green: typecheck + prettier + vitest, 21 files / 195 tests.
 **Status: review.**
+
+**Re-review**: confirmed by hand — `close()` now wraps `httpServer.close(callback)` in `new Promise<void>(...)` and only resolves from the callback. Fix is correct. Agreed on skipping the in-flight-request test for the reason given; not worth a `ServerOptions` test hook for this project's size. **Status: done.**

@@ -120,6 +120,8 @@ describe("placement screen", () => {
     });
 
     expect(readyButton(root).hasAttribute("disabled")).toBe(true);
+    const waiting = root.querySelector('[data-testid="placement-waiting"]') as HTMLElement;
+    expect(waiting.hasAttribute("hidden")).toBe(true);
     unmount();
   });
 
@@ -291,6 +293,7 @@ describe("placement screen", () => {
     rig.push(view);
 
     const waiting = root.querySelector('[data-testid="placement-waiting"]');
+    expect(waiting === null ? "" : waiting.hasAttribute("hidden")).toBe(false);
     expect(waiting === null ? "" : waiting.textContent).toBe("Waiting for opponent\u2026");
     expect(readyButton(root).hasAttribute("disabled")).toBe(true);
     unmount();

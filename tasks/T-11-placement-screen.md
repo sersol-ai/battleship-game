@@ -133,3 +133,6 @@ if (waiting) {
 When `waiting` is true, `hidden` is never removed, so `placement-waiting` stays invisible exactly when it should show. When `waiting` is false, `hidden` is removed, making an empty element visible. Per `docs/UI-CONTRACT.md`, `placement-waiting` must be visible after Ready while waiting for the opponent — as written it never will be. Fix: swap which branch calls `removeAttribute("hidden")` vs sets it back. Not caught by `placement.test.ts:293-294`, which only asserts `.textContent`/`disabled` — add a `hasAttribute("hidden")` assertion for both states when fixing.
 
 **Status: back to `in-progress`.**
+Fixed: 1 — in `refresh()` the `waiting` branch now calls `waitingText.removeAttribute("hidden")` and the `else` branch calls `setAttribute("hidden", "")`, so `placement-waiting` is visible exactly while waiting for the opponent (and the empty element is hidden otherwise). `placement.test.ts` now asserts `hasAttribute("hidden")` in both states: `true` before Ready (first test) and `false` after the controller reports `view.myPlaced` (last test).
+
+**Status: review.**

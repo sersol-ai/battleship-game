@@ -118,3 +118,8 @@ await new Promise<void>((resolve) => httpServer.close(() => resolve()));
 Not caught by `app.test.ts`'s "close() resolves, port stops accepting" test (acceptance item 6) — that passes only because `.close()` synchronously stops accepting new connections regardless of the callback; it doesn't exercise whether `close()` actually waited. Add a test that asserts an in-flight request/connection is allowed to finish before `close()` resolves, if you want this properly covered going forward.
 
 **Status: back to `in-progress`.**
+Fixed: 1 — `close()` now awaits `new Promise<void>((resolve) => { httpServer.close(() => { resolve(); }); })`, so it waits for Node's close callback instead of the `Server` the callback-less overload returns; `index.ts`'s graceful shutdown therefore only force-exits if the server genuinely fails to stop. The comment above the call records why a bare `await httpServer.close()` is wrong.
+
+Not done: the suggested extra test (an in-flight request must finish before `close()` resolves). The static handler only serves small files, so every request finishes long before `close()` is called and any timing-based assertion distinguishing the two implementations would be flaky; the existing "close stops the port" test still covers the observable contract. Flagging it here so the architect can decide whether a slow-route test hook is worth adding to `ServerOptions`.
+
+**Status: review.**

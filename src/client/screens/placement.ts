@@ -256,10 +256,11 @@ export function mountPlacement(root: HTMLElement, deps: PlacementDeps): () => vo
     rotateButton.setAttribute("data-orientation", orientation);
     readyButton.toggleAttribute("disabled", placed.size !== SHIP_TYPES.length);
     if (waiting) {
+      waitingText.removeAttribute("hidden");
       waitingText.textContent = "Waiting for opponent\u2026";
       readyButton.toggleAttribute("disabled", true);
     } else {
-      waitingText.removeAttribute("hidden");
+      waitingText.setAttribute("hidden", "");
       waitingText.textContent = "";
     }
   }

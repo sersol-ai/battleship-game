@@ -164,7 +164,13 @@ export async function startServer(opts: ServerOptions): Promise<RunningServer> {
       sockets.clear();
       alive.clear();
       wss.close();
-      await httpServer.close();
+      // Node's close(callback?) returns the Server, not a Promise: awaiting it would
+      // resolve immediately instead of waiting for the server to stop.
+      await new Promise<void>((resolve) => {
+        httpServer.close(() => {
+          resolve();
+        });
+      });
     },
   };
 }

@@ -170,3 +170,67 @@ section[data-testid="screen-placement"] [data-testid="placement-waiting"] {
 section[data-testid="screen-placement"] [data-testid="placement-waiting"][hidden] {
   display: none;
 }
+
+/* === battle (T-12) === */
+section[data-testid="screen-battle"] header {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+section[data-testid="screen-battle"] .boards {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+@media (min-width: 720px) {
+  section[data-testid="screen-battle"] .boards {
+    flex-wrap: nowrap;
+  }
+}
+@media (max-width: 719px) {
+  section[data-testid="screen-battle"] .boards {
+    flex-wrap: wrap;
+  }
+}
+section[data-testid="screen-battle"] [data-testid="turn-indicator"] {
+  font-weight: 700;
+}
+section[data-testid="screen-battle"] [data-testid="turn-indicator"][data-turn="enemy"] {
+  color: var(--muted);
+}
+section[data-testid="screen-battle"] [data-testid="turn-indicator"][data-turn="me"] {
+  color: var(--accent);
+}
+section[data-testid="screen-battle"] ul[data-testid$="-remaining"] {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--muted);
+}
+section[data-testid="screen-battle"] [data-testid="last-shot"] {
+  color: var(--muted);
+  font-size: 14px;
+}
+section[data-testid="screen-battle"] [data-testid="game-over"] {
+  display: none;
+}
+section[data-testid="screen-battle"] [data-testid="game-over"]:not([hidden]) {
+  display: block;
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  z-index: 20;
+}
+section[data-testid="screen-battle"] [data-testid="btn-menu"][hidden] {
+  display: none;
+}

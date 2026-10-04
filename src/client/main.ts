@@ -12,6 +12,8 @@ import type { MenuDeps } from "./screens/menu.ts";
 import { mountLobby } from "./screens/lobby.ts";
 import type { LobbyDeps } from "./screens/lobby.ts";
 import { mountPlacement } from "./screens/placement.ts";
+import { mountBattle } from "./screens/battle.ts";
+import type { BattleDeps } from "./screens/battle.ts";
 import type { PlacementDeps } from "./screens/placement.ts";
 import { createRng } from "../shared/rng.ts";
 
@@ -23,15 +25,12 @@ let unsubscribe: () => void = () => {};
 let unmountScreen: () => void = () => {};
 let route: Route | "menu" = "menu";
 
-function mountBattlePlaceholder(root: HTMLElement): () => void {
-  const section = document.createElement("section");
-  section.setAttribute("data-testid", "screen-battle");
-  section.textContent = "Battle (T-12)";
-  root.innerHTML = "";
-  root.appendChild(section);
-  return () => {
-    root.innerHTML = "";
-  };
+function mountBattleScreen(): void {
+  if (controller === null) {
+    return;
+  }
+  const deps: BattleDeps = { controller, onExit: exitToMenu };
+  unmountScreen = mountBattle(appEl, deps);
 }
 
 function lobbyDeps(active: GameController | null): LobbyDeps {
@@ -66,7 +65,7 @@ function mountScreen(next: Route | "menu"): void {
     return;
   }
   if (next === "battle") {
-    unmountScreen = mountBattlePlaceholder(appEl);
+    mountBattleScreen();
     return;
   }
   unmountScreen = mountLobby(appEl, lobbyDeps(controller));

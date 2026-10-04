@@ -1,4 +1,4 @@
-root {
+:root {
   --bg: #0b1d2e;
   --panel: #12304a;
   --text: #e6f0f7;
@@ -13,7 +13,7 @@ root {
   --cell: 32px;
 }
 @media (max-width: 420px) {
-  root {
+  :root {
     --cell: 8.5vw;
   }
 }

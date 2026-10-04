@@ -44,4 +44,4 @@ Milestones: **M1 engine** (T-01…T-07) · **M2 playable vs AI** (+T-08…T-12, 
 | ------ | ------------------------------------------------------------------------------------ | -------- | --------- | ------ |
 | BUG-01 | T-11 placement.ts: `placement-waiting` show/hide inverted                            | blocker  | architect | fixed  |
 | BUG-02 | T-16 app.ts: `close()` doesn't actually await server close                           | blocker  | architect | fixed  |
-| BUG-03 | T-08 styles.css: CSS variables on `root` instead of `:root` (cells 0x0, unclickable) | blocker  | Q-01      | todo   |
+| BUG-03 | T-08 styles.css: CSS variables on `root` instead of `:root` (cells 0x0, unclickable) | blocker  | Q-01      | fixed  |

@@ -38,9 +38,11 @@ function lobbyDeps(active: GameController | null): LobbyDeps {
     controller: active,
     onCreate(): void {
       startGame(createOnlineController({ intent: { kind: "create" } }));
+      mountScreen("lobby");
     },
     onJoin(room: string): void {
       startGame(createOnlineController({ intent: { kind: "join", room } }));
+      mountScreen("lobby");
     },
     onBack(): void {
       exitToMenu();
@@ -87,6 +89,8 @@ function exitToMenu(): void {
   unsubscribe();
   controller?.dispose();
   controller = null;
+  // Opening /?room=CODE must not survive a trip back to the menu.
+  history.replaceState(null, "", "/");
   mountScreen("menu");
 }
 
@@ -101,7 +105,7 @@ const menuDeps: MenuDeps = {
     );
   },
   onPlayOnline(): void {
-    startGame(createOnlineController({ intent: { kind: "create" } }));
+    mountScreen("lobby");
   },
 };
 
@@ -109,6 +113,7 @@ function main(): void {
   if (params.room !== null) {
     // Opening /?room=CODE auto-joins that room.
     startGame(createOnlineController({ intent: { kind: "join", room: params.room } }));
+    return;
   }
   mountScreen("menu");
 }

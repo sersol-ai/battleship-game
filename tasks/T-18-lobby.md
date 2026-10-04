@@ -83,13 +83,20 @@ Spectators, chat, matchmaking.
 - happy-dom ships its own type declarations, so `page.document.createElement("div")` is typed as happy-dom's `HTMLElement` and is NOT assignable to the DOM-lib `HTMLElement` that `mountLobby` takes. Fix (cast-free): the helper creates the root through the global `document` identifier, which is DOM-lib typed at compile time and happy-dom's object at runtime.
 - happy-dom has no `Event` export and `dispatchEvent(new Event("click"))` throws "parameter 1 is not of type 'Event'"; its elements expose `click()`, which triggers the click event, so the tests call `btn.click()`.
 - The dependency is now in scope: `package.json` + `package-lock.json` are committed with this task (`"happy-dom": "^20.14.5"` in `dependencies`, plus happy-dom's transitive entries in the lock file), so a fresh clone runs `npm run check` green.
-- The placement/battle branches of `mountOnline()` are comments: `screens/placement.ts` (T-11) and `screens/battle.ts` (T-12) do not exist in this branch, so `routeFor` can only ever return "lobby" here. The online game therefore still stalls in the lobby once joined.
-- Board said T-18 was not ready (T-12 `todo`); I implemented only what does not need T-11/T-12 files.
+- Re-run on `task/T-18b` off `task/T-12` (T-12 was still `review`/unmerged, so `main` had no `screens/battle.ts`). The earlier `task/T-18` branch is an ancestor of this one, so `lobby.ts`, `lobby.test.ts` and the `/* === lobby (T-18) === */` CSS are already in this lineage and needed no changes.
+- Fixed two wiring bugs the earlier pass left: `onCreate`/`onJoin` now call `mountScreen("lobby")` after `startGame` — `route` was already `"lobby"`, so the subscribe callback never re-mounted and the lobby kept `controller === null`, meaning the room code / share link never rendered after clicking Create room.
+- `main()` now returns early for `/?room=CODE`: the subscribe callback mounts the lobby, and the old fall-through to `mountScreen("menu")` was replacing it with the menu.
+- Menu `onPlayOnline` now mounts the lobby with `controller === null` (per spec) instead of starting an OnlineController with `create` intent, so the user chooses Create room / join by code in the lobby.
+- `exitToMenu` now does `history.replaceState(null, "", "/")` so `?room=` does not survive a trip back to the menu.
+- No `stopGame()` helper: `startGame` already unsubscribes and disposes the previous controller before installing the new one, which is the retry-dispose the spec asks for.
+- Placement rng bullet lives in `main.ts`: `rng: createRng(params.seed ^ 0x5bd1e995)` on every placement mount, online included.
+- `npm run check` green: 21 files / 195 tests; the 4 lobby tests are unchanged and still pass.
+- `main.ts` wiring itself has no unit test: importing it runs the entry point (`document.getElementById("app")!`), so the Tests section's 4 lobby tests are the only honest coverage.
 
 ## Questions for architect
 
 1. Resolved: I extended T-18's "Files" list to include `package.json` + `package-lock.json` and committed `"happy-dom": "^20.14.5"`, so the branch is self-contained and a fresh clone runs `npm run check` green. Please confirm happy-dom belongs in `dependencies` (not `devDependencies`) — the client bundle never imports it, only tests do, so `devDependencies` may be the better home.
-2. **T-18 depends on T-12, which is `todo`.** `main.ts` cannot mount placement/battle because `screens/placement.ts` and `screens/battle.ts` do not exist yet, so the "Placement rng for online games: `createRng(params.seed ^ 0x5bd1e995)`" bullet has nowhere to live — it belongs to the placement screen's deps, not `main.ts`. Should T-18 be re-run after T-11/T-12 merge, with that rng wired there?
+2. Resolved by this re-run: T-18 was re-run on top of the T-11/T-12 lineage, so `main.ts` mounts placement and battle through `routeFor`, and the placement rng bullet lives in `main.ts` (`rng: createRng(params.seed ^ 0x5bd1e995)`).
 3. `LobbyDeps.controller` is a plain value, so `main.ts` must re-mount the lobby after `onCreate`/`onJoin` for the new controller to show up (the spec says "then re-mount the lobby", so I followed that literally).
 
 ## Review

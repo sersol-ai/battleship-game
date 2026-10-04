@@ -135,4 +135,5 @@ When `waiting` is true, `hidden` is never removed, so `placement-waiting` stays 
 **Status: back to `in-progress`.**
 Fixed: 1 — in `refresh()` the `waiting` branch now calls `waitingText.removeAttribute("hidden")` and the `else` branch calls `setAttribute("hidden", "")`, so `placement-waiting` is visible exactly while waiting for the opponent (and the empty element is hidden otherwise). `placement.test.ts` now asserts `hasAttribute("hidden")` in both states: `true` before Ready (first test) and `false` after the controller reports `view.myPlaced` (last test).
 
+`npm run check` green: typecheck + prettier + vitest, 21 files / 195 tests.
 **Status: review.**

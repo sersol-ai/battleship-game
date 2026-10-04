@@ -122,4 +122,5 @@ Fixed: 1 — `close()` now awaits `new Promise<void>((resolve) => { httpServer.c
 
 Not done: the suggested extra test (an in-flight request must finish before `close()` resolves). The static handler only serves small files, so every request finishes long before `close()` is called and any timing-based assertion distinguishing the two implementations would be flaky; the existing "close stops the port" test still covers the observable contract. Flagging it here so the architect can decide whether a slow-route test hook is worth adding to `ServerOptions`.
 
+`npm run check` green: typecheck + prettier + vitest, 21 files / 195 tests.
 **Status: review.**

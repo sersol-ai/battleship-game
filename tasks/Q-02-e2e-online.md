@@ -54,6 +54,27 @@ export async function playOnlineUntilGameOver(a: Page, b: Page): Promise<void>;
 
 ## Coder notes
 
+Summary: `npm run check` → `Test Files 21 passed (21) / Tests 195 passed (195)`;
+`npx playwright test e2e/online.spec.ts --repeat-each=3` → 24 passed / 3 fixme / 30 skipped, no flakes.
+
+- 9 tests as specified; 7 run green on the desktop project, the mobile project skips them
+  (`test.skip(testInfo.project.name !== "desktop")`), test 3 is `test.fixme` → BUG-005.
+- BUG-005: online Ready reroutes A to `screen-battle`, so `placement-waiting` (UI-CONTRACT line 47)
+  is unreachable — routing.ts rule 3 excludes `online && myPlaced`. Body kept whole, nothing weakened.
+- BUG-004 filed on the way: the placement screen's `btn-menu` has no click handler (`onExit` never
+  called), so leaving only works from the battle header — test 8 therefore does `bothReady` first.
+- Helpers added: `createRoom` (test 1 asserts the lobby block _before_ B joins), `watchStatus` +
+  `statusLog` (a MutationObserver on the `data-status` attribute inside page A).
+- Transient statuses race: "disconnected" and "left" live ~10–30ms, under Playwright's ~100ms
+  re-query interval, so `toBeVisible` on them failed 5 of 6 runs; tests 7 and 8 watch the attribute.
+- `startOnlineGame` grew an optional 3rd arg `watchA` so test 6 can attach its
+  `page.on("websocket")` frame recorder before A navigates.
+
 ## Questions for architect
+
+- BUG-004 / BUG-005 are filed in `tasks/bugs/`. `src/client/routing.ts` rule 3 and
+  `docs/UI-CONTRACT.md` line 47 disagree about where the placement screen should be once the player
+  has placed in online mode; both are contract-adjacent, so I left the decision to the architect and
+  only reported it. Test 3 stays `fixme` until that is settled.
 
 ## Review

@@ -1,10 +1,9 @@
 import { test, expect } from "@playwright/test";
 import { cell, fireRowMajor, gridStates, playUntilGameOver, startAiGame } from "./helpers.ts";
-// Tests 3-9 are `test.fixme` because of BUG-03 (tasks/bugs/B-003-styles-css-root-selector.md):
-// styles.css declares its CSS variables on `root` instead of `:root`, so --cell is undefined and
-// every grid cell renders 0x0 — no cell can be clicked, which is what those tests do.
-// They are written as full tests; un-commenting `fixme` (i.e. switching them back to `test`) is
-// the QA step once BUG-03 is fixed. Nothing in them is weakened.
+// BUG-03 (styles.css declared its CSS variables on `root`, so --cell was undefined and every
+// grid cell rendered 0x0 — unclickable) blocked tests 3-9, which were left as `test.fixme`.
+// Q-02 re-enabled them (`test.fixme` -> `test`) after the fix landed on main; they are unchanged
+// otherwise and all pass, which closes the coverage loop for that bug.
 
 test.describe("vs computer (AI)", () => {
   test("menu shows both entry points and defaults difficulty to normal", async ({ page }) => {
@@ -37,7 +36,7 @@ test.describe("vs computer (AI)", () => {
     await expect(page.getByTestId("btn-ready")).toBeDisabled();
   });
 
-  test.fixme("manual placement: carrier is selected by default, A1 places it, rotate toggles // BUG-03", async ({
+  test("manual placement: carrier is selected by default, A1 places it, rotate toggles", async ({
     page,
   }) => {
     await page.goto("/?seed=42&aidelay=0");
@@ -59,9 +58,7 @@ test.describe("vs computer (AI)", () => {
     await expect(page.getByTestId("btn-rotate")).toHaveAttribute("data-orientation", "H");
   });
 
-  test.fixme("invalid spot: battleship at B2 next to carrier at A1 is refused // BUG-03", async ({
-    page,
-  }) => {
+  test("invalid spot: battleship at B2 next to carrier at A1 is refused", async ({ page }) => {
     await page.goto("/?seed=42&aidelay=0");
     await page.getByTestId("screen-menu").waitFor();
     await page.getByTestId("btn-play-ai").click();
@@ -77,7 +74,7 @@ test.describe("vs computer (AI)", () => {
     await expect(cell(page, "grid-placement", 1, 1)).toHaveAttribute("data-state", "empty");
   });
 
-  test.fixme("clicking a placed ship cell picks it up // BUG-03", async ({ page }) => {
+  test("clicking a placed ship cell picks it up", async ({ page }) => {
     await page.goto("/?seed=42&aidelay=0");
     await page.getByTestId("screen-menu").waitFor();
     await page.getByTestId("btn-play-ai").click();
@@ -93,7 +90,7 @@ test.describe("vs computer (AI)", () => {
     }
   });
 
-  test.fixme("full game vs easy AI (seed 42) ends with a result // BUG-03", async ({ page }) => {
+  test("full game vs easy AI (seed 42) ends with a result", async ({ page }) => {
     await startAiGame(page, { seed: 42, difficulty: "easy" });
     await expect(page.getByTestId("turn-indicator")).toHaveAttribute("data-turn", "me");
     const shots = await playUntilGameOver(page);
@@ -109,7 +106,7 @@ test.describe("vs computer (AI)", () => {
     );
   });
 
-  test.fixme("firing twice at the same enemy cell changes nothing // BUG-03", async ({ page }) => {
+  test("firing twice at the same enemy cell changes nothing", async ({ page }) => {
     await startAiGame(page, { seed: 42 });
     const target = cell(page, "grid-enemy", 0, 0);
     await expect(target).toHaveAttribute("data-state", "unknown");
@@ -134,9 +131,7 @@ test.describe("vs computer (AI)", () => {
     expect(ownAfter).toBe(ownBefore);
   });
 
-  test.fixme("game over -> btn-rematch -> placement; game over -> btn-menu -> menu // BUG-03", async ({
-    page,
-  }) => {
+  test("game over -> btn-rematch -> placement; game over -> btn-menu -> menu", async ({ page }) => {
     await startAiGame(page, { seed: 42 });
     await playUntilGameOver(page);
     await expect(page.getByTestId("game-over")).toBeVisible();
@@ -152,9 +147,7 @@ test.describe("vs computer (AI)", () => {
     await expect(page.getByTestId("screen-menu")).toBeVisible();
   });
 
-  test.fixme("the same seed replays identically on two fresh pages // BUG-03", async ({
-    browser,
-  }) => {
+  test("the same seed replays identically on two fresh pages", async ({ browser }) => {
     const first = await browser.newPage();
     const second = await browser.newPage();
     await startAiGame(first, { seed: 42 });

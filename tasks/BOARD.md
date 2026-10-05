@@ -32,7 +32,7 @@ A task is **ready** when every dependency is `done`. Tasks in the same wave can 
 | D-01 | Dockerfile + CI                     | devops    | T-16, Q-01       | 10   | done   |
 | Q-02 | Online e2e                          | qa        | T-18, Q-01       | 10   | done   |
 | D-02 | Release workflow (GHCR)             | devops    | D-01             | 11   | done   |
-| Q-03 | Robustness / mobile / abuse         | qa        | Q-02             | 11   | todo   |
+| Q-03 | Robustness / mobile / abuse         | qa        | Q-02             | 11   | review |
 | D-03 | Deploy to Portainer (portainer-iac) | architect | D-02             | 12   | todo   |
 
 Milestones: **M1 engine** (T-01…T-07) · **M2 playable vs AI** (+T-08…T-12, Q-01) ·
@@ -47,3 +47,5 @@ Milestones: **M1 engine** (T-01…T-07) · **M2 playable vs AI** (+T-08…T-12, 
 | BUG-03 | T-08 styles.css: CSS variables on `root` instead of `:root` (cells 0x0, unclickable)    | blocker  | Q-01      | fixed  |
 | BUG-04 | T-11 placement.ts: `btn-menu` has no click handler (`onExit` never called)              | blocker  | Q-02      | fixed  |
 | BUG-05 | T-08 routing.ts: online Ready reroutes to battle, so `placement-waiting` is unreachable | blocker  | Q-02      | fixed  |
+| BUG-06 | ui/grid.ts: cell buttons have no `aria-label` (200 unnamed buttons)                     | major    | Q-03      | todo   |
+| BUG-07 | lobby: `input-room-code` is not auto-uppercased                                         | minor    | Q-03      | todo   |

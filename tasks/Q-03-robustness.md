@@ -51,6 +51,14 @@ Exploratory (manual, with the app running; write findings as bug files, not test
 
 ## Coder notes
 
+Summary: `npx playwright test` → `33 passed / 19 skipped / 0 failed`; `npx playwright test e2e/robustness.spec.ts --repeat-each=3` → 21 passed / 27 skipped; `npm run check` → `Test Files 21 passed (21) / Tests 199 passed (199)`.
+
+- BUG-06: no cell button carries an `aria-label` (200 unnamed buttons) — test 7 is `test.fixme` for it; the keyboard half (Tab focus reaches an enemy cell, Enter fires) is a separate green test so it stays covered.
+- BUG-07: `input-room-code` keeps the typed case, contract says auto-uppercased; joining still works because the server folds the code, so minor and no test (exploratory finding).
+- Item 8 probed with throwaway specs (`e2e/probe*.spec.ts`, deleted after the run): rapid double-clicks and clicks during `aidelay=1500` are ignored while `data-turn="enemy"`; a 320px viewport keeps `scrollWidth == innerWidth` with both grids inside it; a second tab on the same `/?room=<code>` shows `lobby-error` "Room is full" instead of crashing; `btn-ready` is `disabled` until the fleet is placed; keyboard `R` toggles `btn-rotate`. Server restart mid-game was not automated (the runner owns the webServer) — left to manual QA.
+- `page.on("websocket")` frames arrive as `{ payload }`, not `{ data }`; that is how test 5 recovers A's `joined.token` for the resume.
+- A touch synthesized click lands one frame later, so test 2 waits on `toHaveAttribute` before reading the grid — reading straight after `tap()` failed 3/3 runs.
+
 ## Questions for architect
 
 ## Review

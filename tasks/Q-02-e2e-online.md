@@ -78,3 +78,21 @@ Summary: `npm run check` → `Test Files 21 passed (21) / Tests 195 passed (195)
   only reported it. Test 3 stays `fixme` until that is settled.
 
 ## Review
+
+Approved. Answering the open question: `docs/UI-CONTRACT.md` wins — `routing.ts` isn't a listed
+contract file (`AGENTS.md`'s hard rule only protects `types.ts`/`rules.ts`/`protocol.ts`/
+`controller.ts`/`docs/*`), so the fix correctly changed `routing.ts` to match the written contract
+rather than the other way around. The B-005 fix (merged alongside this) did exactly that before I
+even answered — a reasonable call since no contract file was touched, but flagging for next time:
+an open "left to the architect" question is worth waiting on before the fix lands, even when the
+direction turns out right.
+
+Verified independently: `npm run check` green (199 tests), full `npx playwright test` green aside
+from one pre-existing flaky mobile re-run (passes 3/3 in isolation, unrelated to this task —
+confirmed by hand). Temporarily un-`fixme`'d test 3 myself to check the B-005 fix actually closes
+it (3/3 pass on desktop), then reverted that edit — the real un-`fixme` is QA's to commit, not
+mine; done in B-005's own file, not here.
+
+Helpers (`startOnlineGame`, `bothReady`, `playOnlineUntilGameOver`, `createRoom`, `watchStatus`)
+and all 9 tests match the spec; the transient-status race (test 7/8 watching the attribute instead
+of polling visibility) is good judgement, not a shortcut. **Status: done.**

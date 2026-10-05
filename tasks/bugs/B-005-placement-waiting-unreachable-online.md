@@ -96,3 +96,16 @@ branching off `main` left no task file and no BUG-05 row in `tasks/BOARD.md` to 
 of the old code sent an online player who had not placed yet back to the lobby whenever the
 opponent was `waiting` — that is why the e2e helpers only see `screen-placement` once both seats
 are connected; I kept that behaviour for the not-placed case and only extended it to `left`.
+
+## Architect re-review
+
+Confirmed the fix sides with `docs/UI-CONTRACT.md` over the old `routing.ts` behavior — the right
+call, since `routing.ts` isn't a protected contract file and the written contract is unambiguous.
+Verified independently rather than trusting the write-up: temporarily flipped Q-02 test 3
+(`e2e/online.spec.ts:56`, still `test.fixme`) from `fixme` to a real test and ran it 3x — all 3
+passed on desktop — then reverted that edit; the actual un-`fixme` commit is QA's to make, not
+this bug's. `npm run check` green (199 tests); full e2e green apart from one pre-existing flaky
+mobile re-run (3/3 in isolation, unrelated). **Status: fixed.**
+
+**Follow-up, not done here**: `e2e/online.spec.ts:56`'s `test.fixme` → `test` still needs an
+actual commit from QA to close out Q-02's own test coverage for this bug.

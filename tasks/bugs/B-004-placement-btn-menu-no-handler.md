@@ -87,3 +87,9 @@ Anyone reproducing this bug should check `lsof -i:8080` first. (b) BUG-05 is sti
 `btn-ready` online reroutes to `screen-battle` (`src/client/routing.ts` rules 2/3), so
 `placement-waiting` stays unreachable. That is a different file and a different bug; leaving it
 alone here.
+
+## Architect re-review
+
+Confirmed by hand: `placement.ts:98`'s handler calls `deps.onExit()`, same shape as
+`battle.ts:76`. `placement.test.ts`'s new "btn-menu in the header calls onExit" case is real, not
+weakened. `npm run check` green: 199 tests. **Status: fixed.**

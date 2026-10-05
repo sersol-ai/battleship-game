@@ -10,27 +10,21 @@ export function routeFor(s: ControllerSnapshot): Route {
     return "lobby";
   }
 
-  // Rule 2: online placing, not placed, opponent waiting/left → lobby
+  // Rule 2: online placing, opponent left (or still waiting and not placed yet) → lobby
   if (
     mode === "online" &&
     view !== null &&
     typeof view === "object" &&
     "phase" in view &&
     view.phase === "placing" &&
-    !view.myPlaced &&
-    (s.opponent === "waiting" || s.opponent === "left")
+    (s.opponent === "left" || (s.opponent === "waiting" && !view.myPlaced))
   ) {
     return "lobby";
   }
 
-  // Rule 3: placing phase → placement (not online with myPlaced=true)
-  if (
-    view !== null &&
-    typeof view === "object" &&
-    "phase" in view &&
-    view.phase === "placing" &&
-    !(mode === "online" && view.myPlaced)
-  ) {
+  // Rule 3: placing phase → placement. Online stays here after Ready too: the placement
+  // screen shows `placement-waiting` until the match moves to "playing" (rule below).
+  if (view !== null && typeof view === "object" && "phase" in view && view.phase === "placing") {
     return "placement";
   }
 

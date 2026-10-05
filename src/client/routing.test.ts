@@ -49,7 +49,7 @@ describe("routing", () => {
     ).toBe("lobby");
   });
 
-  it("rule 2: online placing, player already placed → battle", () => {
+  it("rule 3: online placing, player already placed → placement (shows placement-waiting)", () => {
     const v = pv("placing", true);
     expect(
       routeFor({
@@ -60,7 +60,46 @@ describe("routing", () => {
         room: "ABC" as never,
         error: null,
       }),
-    ).toBe("battle"); // falls through to rule 4
+    ).toBe("placement");
+  });
+
+  it("rule 2: online placing, already placed, opponent left → lobby", () => {
+    expect(
+      routeFor({
+        mode: "online",
+        view: pv("placing", true),
+        connection: "open",
+        opponent: "left",
+        room: "ABCDEF",
+        error: null,
+      }),
+    ).toBe("lobby");
+  });
+
+  it("rule 3: online placing, already placed, opponent connected → placement", () => {
+    expect(
+      routeFor({
+        mode: "online",
+        view: pv("placing", true),
+        connection: "open",
+        opponent: "connected",
+        room: "ABCDEF",
+        error: null,
+      }),
+    ).toBe("placement");
+  });
+
+  it("online playing (already placed) still routes to battle", () => {
+    expect(
+      routeFor({
+        mode: "online",
+        view: pv("playing"),
+        connection: "open",
+        opponent: "connected",
+        room: "ABCDEF",
+        error: null,
+      }),
+    ).toBe("battle");
   });
 
   it("rule 3: AI game, phase placing → placement", () => {

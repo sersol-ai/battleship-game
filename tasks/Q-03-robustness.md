@@ -62,3 +62,21 @@ Summary: `npx playwright test` → `33 passed / 19 skipped / 0 failed`; `npx pla
 ## Questions for architect
 
 ## Review
+
+Approved. Verified independently rather than trusting the write-up: `npm run check` green (199
+tests), full `npx playwright test` gives exactly the claimed **33 passed / 19 skipped / 0
+failed**. Good coverage of the actually-hard cases (raw-socket protocol abuse, the 20KB
+`maxPayload` close, mobile layout/tap, keyboard access) rather than padding with easy ones.
+
+**BUG-06** confirmed exactly as reported — grepped `grid.ts` directly, zero `aria-label` anywhere.
+
+**BUG-07 corrected, not just confirmed** — the original report overstated it ("nothing
+upper-cases it"). I wrote a probe and the input _does_ uppercase, via the screen's existing 100ms
+poll; the real defect is just the ~100ms lag versus an instant keystroke handler, which is what
+the original probe actually caught without realizing it waited too briefly. Retitled the bug file
+and lowered the implied severity accordingly (see its own Review section) rather than letting the
+overstated version stand — this kind of claim is exactly what should get verified before being
+acted on, same as I should verify my own.
+
+Exploratory item 8's findings are all plausible given the rest of the codebase and not worth
+re-deriving by hand one by one; no red flags. **Status: done.**

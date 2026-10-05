@@ -1,4 +1,4 @@
-# B-007 — `input-room-code` is not auto-uppercased: a typed lower-case code stays lower-case
+# B-007 — `input-room-code` uppercases via a 100ms poll, not instantly on keystroke
 
 Found by: Q-03 Severity: minor
 
@@ -39,3 +39,16 @@ room-link tag=data-testid=room-link type=text readonly= autocomplete=off hidden=
 ```
 
 ## Review
+
+**Correcting the claim, not just confirming it** — this report overstates the defect. Wrote a
+probe: `input.fill("fr3vwu")` then `input.inputValue()` immediately does read back `fr3vwu` (as
+reported), but waiting past the screen's own `setInterval(render, SYNC_MS)` (`lobby.ts:16`,
+`SYNC_MS = 100`) — which is what actually calls `syncCodeInput()` (`lobby.ts:63-68`) — the value
+**is** `FR3VWU`. So "nothing upper-cases it" / "the value stays exactly as typed" is not accurate;
+the mechanism exists and works. The real, narrower defect: it's a ~100ms **polling** correction
+rather than an immediate `input`-event handler, so there's a brief visible window (and the exact
+window the original probe happened to read in) where the field shows the wrong case before the
+next tick fixes it. Retitling to reflect that. Severity stays minor — if anything, lower than
+originally filed, not higher. **Status: open** (still a real, if smaller, defect — worth an
+`input`-event listener instead of relying on the poll — but not the "nothing happens" bug as
+written).

@@ -52,3 +52,8 @@ Final `npm run check`: Test Files 21 passed (21) · Tests 199 passed (199) · pr
 ## Questions for architect
 
 ## Review
+
+`release.yml` and `RELEASING.md` both match spec exactly (permissions, metadata tags, build-push
+config, digest-to-summary step; `RELEASING.md` is 24 lines, within the ≤25 cap and accurate).
+`npm run check` confirmed green by hand (199 tests). Merging and cutting the first real release
+(`npm version patch`, `git push --follow-tags`) to satisfy this task's acceptance bar.

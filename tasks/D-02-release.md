@@ -42,6 +42,13 @@ Pushing a git tag `vX.Y.Z` publishes `ghcr.io/sersol-ai/battleship-game:X.Y.Z` (
 
 ## Coder notes
 
+- Wrote `.github/workflows/release.yml` exactly to the spec: `push` on `v*.*.*`, `permissions: {contents: read, packages: write}`, checkout → setup-node 22 (`cache: npm`) → `npm ci` → `npm run check` (so a broken build never publishes) → buildx → ghcr login (`github.actor` / `GITHUB_TOKEN`) → metadata (`{{version}}`, `{{major}}.{{minor}}`, `latest`) → build-push (`push: true`, `linux/amd64`, tags+labels from metadata, `cache-from: type=gha`, `cache-to: type=gha,mode=max`). Last step echoes `steps.build.outputs.digest` into `$GITHUB_STEP_SUMMARY` — that is the digest D-03 pins.
+- `RELEASING.md` is 24 lines (under the 25-line cap): `npm version` + `git push --follow-tags`, read the digest off the run summary, make the package Public once, then D-03 in portainer-iac.
+- Surprising bit: prettier parses the YAML, so `npm run check` really does catch it. My first draft's `run: echo "digest: …"` one-liner failed with "Nested mappings are not allowed in compact mappings" (the `: ` inside the quoted text); it is now a `run: |` block scalar.
+- I cannot see CI results from here — no tag has been pushed, so no Actions run exists yet. Architect: push `v0.1.1` (or whatever `npm version patch` picks) and check the run at https://github.com/sersol-ai/battleship-game/actions/workflows/release.yml, then record the digest here.
+
+Final `npm run check`: Test Files 21 passed (21) · Tests 199 passed (199) · prettier "All matched files use Prettier code style!" · typecheck clean.
+
 ## Questions for architect
 
 ## Review

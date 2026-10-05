@@ -31,7 +31,7 @@ A task is **ready** when every dependency is `done`. Tasks in the same wave can 
 | Q-01 | Playwright setup + vs-AI e2e        | qa        | T-12             | 9    | done   |
 | D-01 | Dockerfile + CI                     | devops    | T-16, Q-01       | 10   | done   |
 | Q-02 | Online e2e                          | qa        | T-18, Q-01       | 10   | done   |
-| D-02 | Release workflow (GHCR)             | devops    | D-01             | 11   | todo   |
+| D-02 | Release workflow (GHCR)             | devops    | D-01             | 11   | review |
 | Q-03 | Robustness / mobile / abuse         | qa        | Q-02             | 11   | todo   |
 | D-03 | Deploy to Portainer (portainer-iac) | architect | D-02             | 12   | todo   |
 

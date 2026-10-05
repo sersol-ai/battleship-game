@@ -66,6 +66,13 @@ Triggers: `push` to any branch, `pull_request`. `permissions: contents: read`. J
 
 ## Coder notes
 
+- `Dockerfile` is the spec text verbatim: two `node:22-alpine` stages, build stage does `npm ci` + `npm run build`, runtime reinstalls with `--omit=dev --ignore-scripts`, copies `/app/dist`, runs as `node` on 8080.
+- `.dockerignore` is exactly the 10 entries the spec lists (so `tasks/`, `docs/`, `e2e/`, `*.md` never reach the build context, and `dist` is rebuilt in-image).
+- `ci.yml`: `check` (checkout, setup-node 22 + npm cache, `npm ci`, `npm run check`, `npm run build`) → `e2e` (`CI: "true"` so playwright never reuses a server; report uploaded only on failure) → `docker` (buildx, build-push `push: false`/`load: true`/`tags: battleship-game:ci`, then the smoke test).
+- Smoke test: polls `/healthz` up to 20 times, then proves static serving with `curl / | grep -q '<div\|<main'`; only that path exits 0, every failure prints `docker logs bs` and exits 1. I wrote the poll as `if curl ...; then ok=1; break; fi` rather than the spec's `curl && exit 0` because Actions runs scripts under `bash -eo pipefail`, where a failed `curl && exit 0` kills the script before the log dump. Verified both branches locally with stubbed `curl`/`docker`.
+- Docker is not installed on this machine, so nothing was built or run here — the image is proven by CI only. I cannot see Actions results: architect, please record the `ci` workflow run URL (all three jobs green) here.
+- `npm run check` final line: `Test Files  21 passed (21) / Tests  199 passed (199)` (typecheck + `prettier --check .` + vitest all green; prettier has no parser for `Dockerfile`/`.dockerignore`, so it silently skips them — `ci.yml` is checked and clean).
+
 ## Questions for architect
 
 ## Review

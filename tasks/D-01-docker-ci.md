@@ -76,3 +76,12 @@ Triggers: `push` to any branch, `pull_request`. `permissions: contents: read`. J
 ## Questions for architect
 
 ## Review
+
+`Dockerfile`/`.dockerignore` match the spec exactly. `ci.yml` matches too, with one deliberate,
+well-justified deviation: the spec's literal smoke-test poll (`curl ... && exit 0`) would abort
+the whole script on the _first_ failed poll under Actions' default `bash -e` (a bare `&&` list
+isn't exempt from `-e` the way an `if` condition is) — so the "retry up to 20 times" behavior the
+spec clearly intends would never actually happen. Wrapping the curl in `if ... ; then ok=1; break;
+fi` fixes a real bug in the spec text itself, not a shortcut; verified with stubbed `curl`/`docker`
+for both the success and failure paths. `npm run check` confirmed green by hand (199 tests).
+Pushing to `main` now to get the real CI run the acceptance criteria asks for.

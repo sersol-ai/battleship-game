@@ -84,4 +84,8 @@ isn't exempt from `-e` the way an `if` condition is) — so the "retry up to 20 
 spec clearly intends would never actually happen. Wrapping the curl in `if ... ; then ok=1; break;
 fi` fixes a real bug in the spec text itself, not a shortcut; verified with stubbed `curl`/`docker`
 for both the success and failure paths. `npm run check` confirmed green by hand (199 tests).
-Pushing to `main` now to get the real CI run the acceptance criteria asks for.
+
+Pushed to `main`. CI run: https://github.com/sersol-ai/battleship-game/actions/runs/37295413917 —
+all three jobs green (`check` 21s, `docker` 26s, `e2e` 1m41s). The only annotations are GitHub's
+own platform notices (Node 20 deprecation on actions, upcoming `ubuntu-latest` image migration) —
+informational, not failures, nothing to act on. **Status: done.**

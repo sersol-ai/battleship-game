@@ -95,6 +95,9 @@ export function mountPlacement(root: HTMLElement, deps: PlacementDeps): () => vo
   const menuButton = document.createElement("button");
   menuButton.setAttribute("data-testid", "btn-menu");
   menuButton.textContent = "Menu";
+  menuButton.addEventListener("click", () => {
+    deps.onExit();
+  });
   header.appendChild(menuButton);
   section.appendChild(header);
 

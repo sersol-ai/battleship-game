@@ -298,4 +298,21 @@ describe("placement screen", () => {
     expect(readyButton(root).hasAttribute("disabled")).toBe(true);
     unmount();
   });
+
+  it("btn-menu in the header calls onExit", async () => {
+    const rig = makeRig();
+    const root = newRoot();
+    const exits: string[] = [];
+    const unmount = mountPlacement(root, {
+      controller: rig.controller,
+      rng: createRng(1),
+      onExit: () => {
+        exits.push("exit");
+      },
+    });
+
+    queryButton(root, '[data-testid="btn-menu"]').click();
+    expect(exits).toEqual(["exit"]);
+    unmount();
+  });
 });

@@ -55,5 +55,13 @@ Final `npm run check`: Test Files 21 passed (21) · Tests 199 passed (199) · pr
 
 `release.yml` and `RELEASING.md` both match spec exactly (permissions, metadata tags, build-push
 config, digest-to-summary step; `RELEASING.md` is 24 lines, within the ≤25 cap and accurate).
-`npm run check` confirmed green by hand (199 tests). Merging and cutting the first real release
-(`npm version patch`, `git push --follow-tags`) to satisfy this task's acceptance bar.
+`npm run check` confirmed green by hand (199 tests). Merged and cut the first real release.
+
+**v0.1.1 run**: https://github.com/sersol-ai/battleship-game/actions/runs/37305232084 — green in
+59s. Digest: `sha256:3b7cca6d742439de2c2cff5d08d2b220560d9445ccd9d0714449138106df1608`. Package
+visibility is already `public` — it inherited the parent repo's own public visibility on creation,
+so `RELEASING.md` step 3 needed no manual action this time (confirmed via `gh api
+/user/packages/container/battleship-game`). One local fix made in passing: `main`'s upstream
+tracking branch was misconfigured (pointed at `origin/recovery-2026-10-02`, a leftover from the
+earlier emergency git recovery), which broke `git push --follow-tags`'s default target — reset to
+`origin/main` via `git branch --set-upstream-to`. **Status: done.**
